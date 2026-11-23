@@ -3,7 +3,7 @@
 Every self-hosted runner of a project keeps a checkout of it (_work/<name>/<name>) and the factory's scratch
 folder (_work/_temp/factory) with one worktree per ticket. Over many tickets the checkout's git store grows
 pack by pack (each fetch of ticket branches and of the state branch adds one), and a worktree a broken run left
-behind stays. On ck3-sized projects that was 4 to 12 GB per runner, against under 1 GB for the project's own CI
+behind stays. On a large Unity project that was 4 to 12 GB per runner, against under 1 GB for the project's own CI
 checkout of the same repository.
 
 Only runners that are idle are touched: a running job owns its checkout and worktree. What stays: the checkout

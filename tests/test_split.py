@@ -143,7 +143,7 @@ def test_a_ticket_that_is_no_part_releases_nothing():
 
 
 def test_a_part_that_cannot_be_started_now_waits_for_the_sweep():
-    """ck3-battle-engine #265: the work job's token could not start runs (HTTP 403), and the ticket broke off."""
+    """The work job's token could not start runs (HTTP 403), and the ticket broke off."""
     from factory.hosts import HostError
 
     class Refusing(Host):

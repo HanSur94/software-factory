@@ -7,7 +7,7 @@ def _event(station, kind="verdict", outcome="pass"):
 
 
 def test_a_split_ticket_shows_no_station_at_work():
-    """ck3-battle-engine #252: split into parts, the board still said the plan check was running."""
+    """A ticket split into parts, the board still said the plan check was running."""
     events = [_event("intake"), _event("planner", "agent"), _event("plan_check"),
               _event("pipeline", "pipeline", "split")]
     flow = board.workflow({"phase": "split"}, {}, None, events, {}, None)
@@ -31,7 +31,7 @@ def _split_card(number, parts):
 
 
 def test_a_split_ticket_is_in_progress_until_its_parts_are_done():
-    """ck3-battle-engine #244 stood under Fertig right after it was split, with none of its parts built."""
+    """A ticket stood under Fertig right after it was split, with none of its parts built."""
     parent = _split_card(10, [11, 12])
     first = board.card("o/game", 11, {"status.json": '{"phase": "merged"}'}, None, None)
     second = board.card("o/game", 12, {}, {"title": "T2", "url": "u", "labels": ["factory:part", "factory:blocked"]}, None)

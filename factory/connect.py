@@ -92,7 +92,7 @@ def suggest(files: set[str]) -> dict:
 def inspect(repo: str, base: str | None = None, board_repos: list[str] | None = None) -> dict:
     """Everything the page needs to show before and after connecting: what is there, what is missing."""
     if not REPO.match(repo or ""):
-        raise SettingsError("Bitte als owner/name angeben, zum Beispiel HanSur94/mein-projekt.")
+        raise SettingsError("Bitte als owner/name angeben, zum Beispiel octocat/mein-projekt.")
     owner, name = repo.split("/", 1)
 
     def ask(at: str) -> dict:

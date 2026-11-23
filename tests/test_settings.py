@@ -134,3 +134,28 @@ def test_a_prompt_changed_on_the_page_is_what_the_station_gets(overlay):
 def test_a_prompt_may_only_use_the_placeholders_of_its_file(overlay):
     result = settings.save_global({"prompts": {"stations/intake.md": "Read {{no_such_value}} and stop."}})
     assert not result["ok"] and "no_such_value" in " ".join(result["problems"]) and not overlay.exists()
+
+
+def test_the_board_project_list_stays_on_this_machine(overlay):
+    """A published factory must not carry its owner's projects: board.repos, board.local and machine go to
+    settings.local.yaml, which git ignores; the rest stays in settings.yaml that GitHub runs read."""
+    local = overlay.with_name("settings.local.yaml")
+    assert settings.save_global({"board": {"repos": ["me/a", "me/b"], "show_cost": True},
+                                 "machine": {"orphan_minutes": 7}, "delivery": {"auto_merge": True}})["ok"]
+    assert yaml.safe_load(overlay.read_text()) == {"board": {"show_cost": True}, "delivery": {"auto_merge": True}}
+    assert yaml.safe_load(local.read_text()) == {"board": {"repos": ["me/a", "me/b"]}, "machine": {"orphan_minutes": 7}}
+    cfg = config.load_config()
+    assert cfg["board"]["repos"] == ["me/a", "me/b"] and cfg["board"]["show_cost"] is True
+
+    # the text editor shows settings.yaml only; saving it keeps this machine's settings
+    assert settings.save_global(raw="delivery:\n  auto_merge: false\n")["ok"]
+    assert config.load_config()["board"]["repos"] == ["me/a", "me/b"]
+    # a list written into the text moves out of it again, without losing the other local values
+    assert settings.save_global(raw="board:\n  repos: [me/c]\n")["ok"]
+    assert "repos" not in overlay.read_text()
+    assert yaml.safe_load(local.read_text()) == {"board": {"repos": ["me/c"]}, "machine": {"orphan_minutes": 7}}
+
+
+def test_an_old_settings_yaml_with_the_project_list_still_works(overlay):
+    overlay.write_text("board:\n  repos: [me/old]\n")
+    assert config.load_config()["board"]["repos"] == ["me/old"]

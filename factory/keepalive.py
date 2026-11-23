@@ -1,7 +1,7 @@
 """Keep the orchestrator going when GitHub drops its scheduled runs.
 
 The orchestrator (orchestrate.yml) is started by a cron schedule in the product's factory.yml.
-GitHub runs schedules on a best-effort basis and drops many of them: on ck3-battle-engine,
+GitHub runs schedules on a best-effort basis and drops many of them: on one busy project,
 a schedule of every 30 minutes ran three times in one day. Waiting tickets then waited for
 hours with free slots.
 

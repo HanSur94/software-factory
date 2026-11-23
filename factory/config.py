@@ -45,14 +45,47 @@ def settings_path(path: str | os.PathLike | None = None) -> Path | None:
     return Path(env) if env else _config_path(path).parent / "settings.yaml"
 
 
-def load_settings(path: str | os.PathLike | None = None) -> dict:
+# Settings only this machine needs: which projects its board shows and how it watches its own processes. They stay
+# in settings.local.yaml, which git ignores, so a published factory does not carry one owner's project list.
+LOCAL = {"board": ("repos", "local"), "machine": None}
+
+
+def local_path(path: str | os.PathLike | None = None) -> Path | None:
     p = settings_path(path)
+    return None if p is None else p.with_name(p.stem + ".local" + p.suffix)
+
+
+def split_local(overlay: dict) -> tuple[dict, dict]:
+    """(shared, local): the settings every run reads, and the ones that belong to this machine."""
+    shared, local = {k: v for k, v in overlay.items()}, {}
+    for key, fields in LOCAL.items():
+        if not isinstance(shared.get(key), dict):
+            continue
+        if fields is None:
+            local[key] = shared.pop(key)
+            continue
+        part = {f: shared[key][f] for f in fields if f in shared[key]}
+        if part:
+            local[key] = part
+            rest = {f: v for f, v in shared[key].items() if f not in fields}
+            if rest:
+                shared[key] = rest
+            else:
+                shared.pop(key)
+    return shared, local
+
+
+def _read(p: Path | None) -> dict:
     if p is None or not p.exists():
         return {}
     data = yaml.safe_load(p.read_text()) or {}
     if not isinstance(data, dict):
         raise SystemExit(f"{p}: must be a mapping of settings")
     return data
+
+
+def load_settings(path: str | os.PathLike | None = None) -> dict:
+    return deep_merge(_read(settings_path(path)), _read(local_path(path)))
 
 
 def problems(cfg: dict) -> list[str]:

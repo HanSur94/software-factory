@@ -58,7 +58,7 @@ class HandOver(Exception):
 
 def _time_check(ctx: Ctx) -> None:
     """Called before new work starts. A run that goes on until the job's time limit is cut off in the middle of a
-    task (ck3-battle-engine #59 after 3 hours, in its eighth task); stopping between tasks loses nothing."""
+    task (one ticket after 3 hours, in its eighth task); stopping between tasks loses nothing."""
     limit = float(ctx.cfg["pipeline"].get("max_run_minutes") or 0)
     if limit and (time.time() - ctx.started) / 60 >= limit:
         raise HandOver()
@@ -502,7 +502,7 @@ def _base_taken_in(ctx: Ctx, wt: Path, base: str, files: list[str]) -> None:
 
 def _rework(ctx: Ctx, wt: Path, source: str, findings: str, open_findings: int | None = None) -> None:
     """One more round for the implementer. The round limit counts rounds that got nowhere: a review that names
-    fewer blocking points than the round before shows the work converging (ck3-battle-engine #59 went 5, 2, 1 and
+    fewer blocking points than the round before shows the work converging (one ticket went 5, 2, 1 and
     was stopped at 1), so that round is free, up to twice the limit."""
     st, cfg = ctx.status, ctx.cfg["pipeline"]
     limit = cfg["max_rework_rounds"]
@@ -514,7 +514,7 @@ def _rework(ctx: Ctx, wt: Path, source: str, findings: str, open_findings: int |
     exhausted = st["rework_rounds"] >= 2 * limit or (st["rework_rounds"] >= limit and not converging)
     if source == "review" and (exhausted or st.get("review_stalled", 0) >= 2):
         # Checks still gate: the change is green. More rounds of the same open points cost money and leave the work
-        # unseen (ck3-battle-engine #179 and #181 stopped after six rejections each); the owner decides on the PR.
+        # unseen (two tickets stopped after six rejections each); the owner decides on the PR.
         raise ReviewOpen(f"Nach {st['rework_rounds']} Nacharbeitsrunden ohne Fortschritt verlangt das Review weiter "
                          f"Änderungen ({open_findings} blockierende Punkte). Die Factory liefert die Änderung trotzdem "
                          "als Pull Request; die offenen Punkte stehen darin, gemergt wird nur von Hand.")
