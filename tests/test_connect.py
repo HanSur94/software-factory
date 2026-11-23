@@ -61,8 +61,8 @@ def test_workflow_names_the_base_branch_only_when_it_is_not_the_default():
     assert other.count("      base: develop\n") == 4 and "# base: develop" not in other and "#   base: develop" not in other
     assert yaml.safe_load(other)["jobs"]["orchestrate"]["with"] == {"base": "develop"}
     assert "workflow_run" not in yaml.safe_load(other)[True]   # no CI named: the trigger stays commented out
-    ci = yaml.safe_load(connect.build_workflow("develop", "master", ["lint", "battle suite"]))
-    assert ci[True]["workflow_run"] == {"workflows": ["lint", "battle suite"], "types": ["completed"], "branches": ["factory/**"]}
+    ci = yaml.safe_load(connect.build_workflow("develop", "master", ["lint", "e2e suite"]))
+    assert ci[True]["workflow_run"] == {"workflows": ["lint", "e2e suite"], "types": ["completed"], "branches": ["factory/**"]}
     assert ci["jobs"]["ci"]["with"]["base"] == "develop"
 
 
@@ -186,7 +186,7 @@ def test_a_project_can_be_taken_off_the_board(github):
 
 def test_ci_results_reach_the_factory_by_dispatch():
     # A CI run the job token started triggers no workflow_run; report-ci.yml dispatches the result instead.
-    wf = yaml.safe_load(connect.build_workflow("develop", "master", ["battle suite"]))
+    wf = yaml.safe_load(connect.build_workflow("develop", "master", ["e2e suite"]))
     inputs = wf[True]["workflow_dispatch"]["inputs"]
     assert inputs["issue"]["required"] is False
     assert {"ci_branch", "ci_workflow", "ci_conclusion", "ci_run_id", "ci_sha"} <= set(inputs)
@@ -200,7 +200,7 @@ def test_ci_results_reach_the_factory_by_dispatch():
 def test_caller_grants_every_permission_its_called_workflows_ask_for():
     # A called workflow that asks for more than its caller grants makes GitHub reject the whole caller.
     import re
-    caller = yaml.safe_load(connect.build_workflow("develop", "master", ["battle suite"]))
+    caller = yaml.safe_load(connect.build_workflow("develop", "master", ["e2e suite"]))
     granted = caller["permissions"]
     rank = {"none": 0, "read": 1, "write": 2}
     for job in caller["jobs"].values():

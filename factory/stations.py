@@ -144,7 +144,7 @@ def run_station(ctx: Ctx, role: str, template: str, values: dict, cwd: Path, out
     for attempt_model, attempt_effort in attempts:
         repair = ""
         for _ in range(2):
-            # A run that the budget left cannot pay a quarter of is spent for nothing: ck3-battle-engine #59's
+            # A run that the budget left cannot pay a quarter of is spent for nothing: one ticket's
             # reviewer started with 0.23 $ of its 2.50 $, ran into the cap and stopped with a technical error.
             floor = min(float(rc.get("budget_usd", 2.0)), budget_cap or float("inf")) / 4
             if ctx.budget_left() <= 0 or ctx.budget_left() < floor:
@@ -310,7 +310,7 @@ def triage(ctx: Ctx, cwd: Path, failed: list) -> str:
 def _earlier_review(out: Path) -> str:
     """The blocking points of the review before this one, if the change went back for them. Each review is a fresh
     agent: without the earlier points it checked none of them on purpose and found new ones instead, so a ticket
-    could go 1, 3, 2 open points without either side knowing what was settled (ck3-battle-engine #59)."""
+    could go 1, 3, 2 open points without either side knowing what was settled (seen on a real ticket)."""
     if not out.exists():
         return ""
     try:
@@ -330,7 +330,7 @@ def _earlier_review(out: Path) -> str:
 
 def _evidence_note(ctx: Ctx) -> str:
     """What the implementer can produce. Reviews asked for screenshots and Unity runs on runners that had no Unity,
-    and the ticket went round until it stopped (ck3-battle-engine #179, #181): a demand nobody can meet is no finding."""
+    and the ticket went round until it stopped (seen on two real tickets): a demand nobody can meet is no finding."""
     if os.environ.get("FACTORY_SANDBOXED") == "1":
         return ""
     from .harness.claude import READ_ONLY_COMMANDS
@@ -363,7 +363,7 @@ def judge(ctx: Ctx, cwd: Path, manifest: Path, out: Path, scenarios_dir: Path) -
     values = {"manifest_path": manifest, "out": out,
               "judge_notes": (ctx.profile.get("judge") or {}).get("notes") or "(none)",
               # The judge only runs once the work job's checks passed on the commit it gets (pipeline: checks, push,
-              # then ready_for_judge). ck3's judge spent 11 of its 12 minutes running that suite a second time.
+              # then ready_for_judge). One judge spent 11 of its 12 minutes running that suite a second time.
               "checks_passed": _bullets(f"`{c['run']}` ({c['name']})" for c in ctx.profile.get("checks") or [])}
     _, result = run_station(ctx, "judge", ctx.cfg["roles"]["judge"]["prompt"], values, cwd, out,
                             lambda p: contracts.read_json(p, "judge-result"), readonly=False,

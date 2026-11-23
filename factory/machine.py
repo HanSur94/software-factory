@@ -154,7 +154,7 @@ def _runner_info(folder: Path) -> dict:
 
 
 def _short(names: list[str]) -> dict[str, str]:
-    """Runner names without the machine's name they all start with: MacBookPro-factory-1 -> factory-1."""
+    """Runner names without the machine's name they all start with: mymac-factory-1 -> factory-1."""
     heads = {n.split("-", 1)[0] for n in names}
     if len(names) > 1 and len(heads) == 1 and all("-" in n for n in names):
         return {n: n.split("-", 1)[1] for n in names}

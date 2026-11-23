@@ -493,11 +493,11 @@ def test_red_ci_on_the_pull_request_sends_the_ticket_back(product, monkeypatch):
     from factory import deliver, hosts
     assert cli.main(product.args) == 0 and product.status()["phase"] == "delivered"
     dispatched, seen = [], []
-    monkeypatch.setattr(hosts.LocalHost, "failed_log", lambda self, run_id, limit=12000, wait_s=300: "Assets/Battle/Army.cs(12,5): error CS1002: ; expected")
+    monkeypatch.setattr(hosts.LocalHost, "failed_log", lambda self, run_id, limit=12000, wait_s=300: "Assets/Units/Army.cs(12,5): error CS1002: ; expected")
     monkeypatch.setattr(hosts.LocalHost, "dispatch", lambda self: dispatched.append(True))
 
     ctx = _ticket_ctx(product)
-    assert deliver.ci_result(ctx, "battle suite", "failure", "77", "") == "rework"
+    assert deliver.ci_result(ctx, "e2e suite", "failure", "77", "") == "rework"
     st = product.status()
     assert st["phase"] == "rework_ci" and st["ci_rounds"] == 1 and "CS1002" in st["ci_findings"] and dispatched
     assert "Die CI ist rot" in (product.run_dir / "comments.md").read_text()
@@ -519,12 +519,12 @@ def test_ci_result_only_acts_on_a_delivered_ticket_at_its_head(product, monkeypa
     assert cli.main(product.args) == 0
     monkeypatch.setattr(hosts.LocalHost, "dispatch", lambda self: pytest.fail("must not start a round"))
     ctx = _ticket_ctx(product)
-    assert deliver.ci_result(ctx, "battle suite", "success", "1", "") == "pass"
-    assert deliver.ci_result(ctx, "battle suite", "cancelled", "2", "") == "ignored"
+    assert deliver.ci_result(ctx, "e2e suite", "success", "1", "") == "pass"
+    assert deliver.ci_result(ctx, "e2e suite", "cancelled", "2", "") == "ignored"
     monkeypatch.setattr(hosts.LocalHost, "branch_head", lambda self, branch: "b" * 40)
-    assert deliver.ci_result(ctx, "battle suite", "failure", "3", "a" * 40) == "stale"   # an older commit's CI
+    assert deliver.ci_result(ctx, "e2e suite", "failure", "3", "a" * 40) == "stale"   # an older commit's CI
     ctx.status["phase"] = "checks"
-    assert deliver.ci_result(ctx, "battle suite", "failure", "4", "") == "ignored"
+    assert deliver.ci_result(ctx, "e2e suite", "failure", "4", "") == "ignored"
 
 
 def test_ci_that_stays_red_stops_and_a_restart_clears_the_count(product, monkeypatch):
@@ -534,7 +534,7 @@ def test_ci_that_stays_red_stops_and_a_restart_clears_the_count(product, monkeyp
     sh(product.repo, "git", "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qam", "no ci rounds")
     assert cli.main(product.args) == 0
     monkeypatch.setattr(hosts.LocalHost, "dispatch", lambda self: pytest.fail("must not start a round"))
-    assert deliver.ci_result(_ticket_ctx(product), "battle suite", "failure", "5", "") == "stopped"
+    assert deliver.ci_result(_ticket_ctx(product), "e2e suite", "failure", "5", "") == "stopped"
     st = product.status()
     assert st["phase"] == "rework_ci" and "CI" in st["stopped"]
     assert cli.main(product.args) == 0                 # the owner starts it again (label or board button)
@@ -688,22 +688,22 @@ def test_held_pull_request_runs_are_released_instead_of_started_again(product, m
     profile.write_text(profile.read_text() + "overrides:\n  delivery:\n    trigger_workflows: [ci.yml]\n")
     sh(product.repo, "git", "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qam", "ci")
     monkeypatch.setattr(hosts.LocalHost, "branch_head", lambda self, branch: "abc123")
-    monkeypatch.setattr(hosts.LocalHost, "approve_waiting_runs", lambda self, branch, sha, wait_s=45: ["battle suite", "lint"])
+    monkeypatch.setattr(hosts.LocalHost, "approve_waiting_runs", lambda self, branch, sha, wait_s=45: ["e2e suite", "lint"])
     assert cli.main(product.args) == 0
     assert not (product.run_dir / "workflows.jsonl").exists()          # no second copy of the same CI
-    assert [e["detail"] for e in product.events() if e.get("outcome") == "checks_released"] == ["battle suite, lint"]
+    assert [e["detail"] for e in product.events() if e.get("outcome") == "checks_released"] == ["e2e suite, lint"]
 
 
 def test_github_host_approves_only_held_runs_of_the_head(monkeypatch):
     from factory import hosts
     host = hosts.GitHubHost.__new__(hosts.GitHubHost)
     host.repo, approved = "me/game", []
-    runs = [{"databaseId": 1, "conclusion": "action_required", "event": "pull_request", "headSha": "new", "workflowName": "battle suite"},
+    runs = [{"databaseId": 1, "conclusion": "action_required", "event": "pull_request", "headSha": "new", "workflowName": "e2e suite"},
             {"databaseId": 2, "conclusion": "action_required", "event": "pull_request", "headSha": "old", "workflowName": "lint"},
             {"databaseId": 3, "conclusion": "success", "event": "workflow_dispatch", "headSha": "new", "workflowName": "lint"}]
     monkeypatch.setattr(hosts.GitHubHost, "_gh", lambda self, *a, **kw: json.dumps(runs))
     monkeypatch.setattr(hosts.GitHubHost, "_api", lambda self, method, path, body=None, check=True: approved.append(path) or {})
-    assert host.approve_waiting_runs("factory/1-x", "new", wait_s=0) == ["battle suite"]
+    assert host.approve_waiting_runs("factory/1-x", "new", wait_s=0) == ["e2e suite"]
     assert approved == ["actions/runs/1/approve"]
 
 

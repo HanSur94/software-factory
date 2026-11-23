@@ -71,7 +71,7 @@ def test_a_dry_run_is_never_merged(product, monkeypatch):
     ctx = ticket_ctx(product)
     ctx.status["pr"] = "https://github.com/me/tiny/pull/5"
     merging(monkeypatch, merged)
-    assert deliver.ci_result(ctx, "battle suite", "success", "9", "") == "pass" and merged == []
+    assert deliver.ci_result(ctx, "e2e suite", "success", "9", "") == "pass" and merged == []
     assert any("Trockenlauf" in str(e.get("detail")) for e in product.events() if e.get("outcome") == "merge_held")
 
 
@@ -85,7 +85,7 @@ def test_green_ci_merges_without_scenarios_when_the_judge_is_not_required(produc
     ctx = ticket_ctx(product)
     ctx.status["pr"] = "https://github.com/me/tiny/pull/5"
     merging(monkeypatch, merged)
-    assert deliver.ci_result(ctx, "battle suite", "success", "9", "") == "merged"
+    assert deliver.ci_result(ctx, "e2e suite", "success", "9", "") == "merged"
     assert merged == ["https://github.com/me/tiny/pull/5"] and product.status()["phase"] == "merged"
     assert "## Abschlussbericht" in comments(product) and "| CI des Projekts | Tor | grün" in comments(product)
 

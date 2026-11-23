@@ -2,7 +2,7 @@
 
 A ticket the planner estimates above pipeline.split_above_lines changed lines is not built
 as one pull request: every task of its plan becomes an issue of its own (a part), and the
-ticket itself waits until all parts are closed. ck3-battle-engine #59 went out as one pull
+ticket itself waits until all parts are closed. One large ticket went out as one pull
 request of 11,235 lines: too big to review, held from auto-merge, and in conflict with every
 ticket merged while it was open.
 

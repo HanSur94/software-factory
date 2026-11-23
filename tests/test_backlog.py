@@ -49,8 +49,8 @@ def _station(proposals, seen=None):
     return run
 
 
-P = {"title": "Battle · Retreat orders", "why": "game-design.md promises it.", "mandate": "Let a unit retreat.",
-     "acceptance": ["A unit ordered to retreat leaves the field"], "where": ["Assets/Battle/"]}
+P = {"title": "Units · Retreat orders", "why": "game-design.md promises it.", "mandate": "Let a unit retreat.",
+     "acceptance": ["A unit ordered to retreat leaves the field"], "where": ["Assets/Units/"]}
 
 
 def test_an_idle_factory_gets_proposals_labelled_proposed(tmp_path, monkeypatch):

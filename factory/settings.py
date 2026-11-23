@@ -94,7 +94,7 @@ def with_prompts(cfg: dict) -> dict:
 def state(repos: list[str]) -> dict:
     defaults = with_prompts(config.load_defaults())
     path = config.settings_path()
-    raw = path.read_text() if path and path.exists() else ""
+    raw = path.read_text() if path and path.exists() else ""   # settings.local.yaml stays out of the text editor
     try:
         overlay, error = config.load_settings(), ""
     except (SystemExit, yaml.YAMLError) as exc:
@@ -130,8 +130,23 @@ def save_global(values: dict | None = None, raw: str | None = None) -> dict:
     found = config.problems(deep_merge(defaults, overlay))
     if found:
         return {"ok": False, "problems": found}
+    shared, local = config.split_local(overlay)
+    if raw is not None and local:   # the text holds only some of this machine's settings: keep the others
+        local = deep_merge(config.load_settings(), local)
+        local = config.split_local(local)[1]
+    if local or raw is None:   # the form shows every value, so what it leaves out of the local part is gone
+        _write_local(config.local_path(), local)
+    if shared != overlay:
+        text = HEADER + (_dump(shared) if shared else "")
     path.write_text(text)
     return {"ok": True, "problems": []}
+
+
+def _write_local(path, local: dict) -> None:
+    if local:
+        path.write_text("# Nur für diesen Rechner; git ignoriert die Datei.\n" + _dump(local))
+    elif path.exists():
+        path.unlink()
 
 
 def publish() -> dict:

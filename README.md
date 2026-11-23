@@ -1,8 +1,29 @@
 # Software Factory
 
+[![selftest](https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml/badge.svg)](https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
+
 Ein GitHub-Issue mit dem Label `factory:go` wird hier zu einem geprüften Pull Request: Agents planen, schreiben und prüfen den Code, ein getrennter Richter prüft das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat. Im Dark-Modus wird der Pull Request danach ohne Menschen gemergt; sonst mergst du von Hand.
 
-Die Spezifikation steht in [Software Factory – Spezifikation](https://claude.ai/artifact/CewD5pu7Tn18EbwjRGTgWa). Dieses Repo ist ihre erste Umsetzung.
+> **In English:** Software Factory turns a GitHub issue labelled `factory:go` into a reviewed pull request. Claude agents plan, implement and review the change in fixed stations, driven by a plain Python script rather than by an agent. A separate judge then tests the result against hidden scenarios the implementer never saw. A local board shows every ticket on a production line. It runs on GitHub Actions (hosted or self-hosted runners) or locally. The documentation below is in German.
+
+## Schnellstart
+
+Du brauchst:
+
+- Python 3.12 und `pip install -r requirements.txt`
+- die [GitHub CLI](https://cli.github.com/) `gh`, angemeldet mit `gh auth login`
+- [Claude Code](https://claude.com/claude-code) und einem Claude-Abo; auf GitHub als Secret `CLAUDE_CODE_OAUTH_TOKEN` aus `claude setup-token`
+
+```bash
+git clone https://github.com/HanSur94/software-factory.git
+cd software-factory
+pip install -r requirements.txt
+python3 -m factory board          # Board und Einstellungen unter http://127.0.0.1:8787
+```
+
+Im Board „+ Projekt verbinden“ wählen (siehe [Ein Projekt anbinden](#ein-projekt-anbinden)), dann an einem Issue das Label `factory:go` setzen. Ohne GitHub geht es auch: [Lokal laufen lassen](#lokal-laufen-lassen).
 
 ## Ablauf eines Tickets
 
@@ -84,7 +105,7 @@ python3 -m factory board
 
 Danach `http://127.0.0.1:8787/settings` öffnen (oder im Board oben rechts auf „Einstellungen“ klicken). Oben wählst du, wofür die Werte gelten:
 
-- **Alle Projekte:** Speichern schreibt `settings.yaml`, und zwar nur, was von `factory.yaml` abweicht. Lokale Läufe nutzen die Werte sofort. Die Läufe auf GitHub lesen die Factory von `main`, deshalb committet und pusht „Speichern und veröffentlichen“ die Datei gleich mit.
+- **Alle Projekte:** Speichern schreibt `settings.yaml`, und zwar nur, was von `factory.yaml` abweicht. Lokale Läufe nutzen die Werte sofort. Die Läufe auf GitHub lesen die Factory von `main`, deshalb committet und pusht „Speichern und veröffentlichen“ die Datei gleich mit. Was nur deinen Rechner betrifft, also die Projekte des Boards (`board.repos`, `board.local`) und die Maschinenüberwachung (`machine`), landet in `settings.local.yaml`. Git ignoriert diese Datei, damit deine Projektliste nicht mit der Factory veröffentlicht wird.
 - **Ein Projekt:** Speichern schreibt den Abschnitt `overrides` in `.factory/profile.yaml` als Commit auf den Standard-Branch des Projekts. Leere Felder übernehmen den Wert für alle Projekte. Die Seite zeigt dort auch die Checks des Projekts und ob die beiden Zugänge (Secrets) gesetzt sind; eintragen musst du sie selbst.
 
 Einstellbar sind der Ablauf (beratend, blockierend oder aus je Station, Zahl der Runden), die Auslieferung samt Regeln für das automatische Mergen, Schwellen und Budgets, je Station Modell, Effort, Budget, Zeitlimit, Ersatzmodell und Skills, die Runner, die Skill-Packs und das Board. Der Schalter **Dark-Modus** setzt die vier Werte auf einmal. Für alles ohne eigenes Feld gibt es unter „Erweitert“ `settings.yaml` als Text.
@@ -218,7 +239,7 @@ Ein kleines Kanban-Board zeigt alle Tickets nach ihrem Stand: Eingang, Planung, 
 python3 -m factory board
 ```
 
-Danach `http://127.0.0.1:8787` öffnen. Jedes Projekt hat sein eigenes Board unter `/p/OWNER/REPO` (lokale Läufe unter `/p/local/N`): oben was dich braucht, darunter das Fließband mit einer Bahn je Station, am Ende die fertigen Tickets. Die Startseite zeigt alle Projekte als Kacheln mit offenen Punkten, laufender Arbeit und Kosten; ist nur ein Projekt verbunden, öffnet sie direkt dessen Board. Über die Leiste oben wechselst du zwischen den Projekten. Das Board liest nur: den Branch `factory-state` der Repos unter `board.repos` in `factory.yaml` (über `gh`) und die lokalen Läufe unter `board.local`. Es aktualisiert sich alle 8 Sekunden; ein Ticket, an dem gerade gearbeitet wird, hat einen blauen Rand.
+Danach `http://127.0.0.1:8787` öffnen. Jedes Projekt hat sein eigenes Board unter `/p/OWNER/REPO` (lokale Läufe unter `/p/local/N`): oben was dich braucht, darunter das Fließband mit einer Bahn je Station, am Ende die fertigen Tickets. Die Startseite zeigt alle Projekte als Kacheln mit offenen Punkten, laufender Arbeit und Kosten; ist nur ein Projekt verbunden, öffnet sie direkt dessen Board. Über die Leiste oben wechselst du zwischen den Projekten. Das Board liest nur: den Branch `factory-state` der Repos unter `board.repos` in `settings.local.yaml` (über `gh`) und die lokalen Läufe unter `board.local`. Es aktualisiert sich alle 8 Sekunden; ein Ticket, an dem gerade gearbeitet wird, hat einen blauen Rand.
 
 Angehaltene Tickets haben auf ihrer Karte den Knopf **Neu starten**, Tickets in Arbeit im geöffneten Ablauf den Knopf **Erneut anstoßen**. Beide starten den Workflow `factory.yml` des Projekts für dieses Issue, mit deinem `gh`-Zugang; wie die Einstellungsseite nimmt das Board solche Anfragen nur von sich selbst auf diesem Rechner an.
 
@@ -245,7 +266,7 @@ Die Factory liest dafür jeden Agent-Lauf Zeile für Zeile mit und veröffentlic
 Derselbe Ablauf ohne GitHub, mit dem Claude-Login dieses Rechners:
 
 ```bash
-python3 -m factory local --repo ../factory-sandbox --issue 1 --issue-file ticket.md --scenarios ../factory-sandbox-scenarios --budget 5
+python3 -m factory local --repo ../mein-projekt --issue 1 --issue-file ticket.md --scenarios ../mein-projekt-scenarios --budget 5
 ```
 
 Das Issue ist eine Markdown-Datei (erste Zeile ist der Titel). Gearbeitet wird in einem eigenen Worktree unter `~/.cache/software-factory/<projekt>/`; der Arbeitsstand im Projektordner bleibt unberührt. Lokal gibt es keine Sandbox: Der Implementierer darf nur die Programme starten, die das Profil unter `agent_commands` nennt.
@@ -267,7 +288,7 @@ python3 -m pytest -q
 
 ## Stand
 
-Umgesetzt sind unbeaufsichtigte Läufe mit Holdout-Richter und der Dark-Modus mit Auto-Merge. Er ist je Projekt einzuschalten und läuft im Testprojekt `factory-sandbox`.
+Umgesetzt sind unbeaufsichtigte Läufe mit Holdout-Richter und der Dark-Modus mit Auto-Merge. Er ist je Projekt einzuschalten und läuft in einem Testprojekt.
 
 Noch offen gegenüber der Spezifikation:
 
