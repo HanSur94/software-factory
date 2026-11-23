@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software Factory – aus Issues werden geprüfte Pull Requests</title>
+<meta name="description" content="Open-Source-Fließband für Code: Claude-Agents planen, bauen und prüfen ein GitHub-Issue, ein getrennter Richter testet gegen verborgene Szenarien. Gesteuert von einem Skript, nicht von einem Agent.">
+<meta property="og:title" content="Software Factory">
+<meta property="og:description" content="Aus GitHub-Issues werden geprüfte Pull Requests. Agents planen, bauen und prüfen; ein Richter testet gegen verborgene Szenarien.">
+<meta property="og:image" content="https://hansur94.github.io/software-factory/assets/board-kanban-dark.webp">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322d3ee'/%3E%3Ctext x='16' y='21.5' font-family='monospace' font-size='14' font-weight='700' text-anchor='middle' fill='%230b1120'%3ESF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1120; --bg-2: #0f172a; --card: #131c31; --card-2: #182238; --line: #26324a; --line-2: #334155;
+  --fg: #f1f5f9; --fg-2: #cbd5e1; --muted: #94a3b8;
+  --run: #22d3ee; --run-soft: rgba(34, 211, 238, .14);
+  --you: #fbbf24; --you-soft: rgba(251, 191, 36, .14);
+  --done: #4ade80; --done-soft: rgba(74, 222, 128, .14);
+  --pr: #a78bfa;
+  --on-run: #06202a;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 14px; --wrap: 1180px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f8fb; --bg-2: #eef2f7; --card: #ffffff; --card-2: #f8fafc; --line: #dbe3ee; --line-2: #c7d2e0;
+    --fg: #0f172a; --fg-2: #334155; --muted: #526175;
+    --run: #0e7490; --run-soft: rgba(14, 116, 144, .10);
+    --you: #b45309; --you-soft: rgba(180, 83, 9, .10);
+    --done: #15803d; --done-soft: rgba(21, 128, 61, .10);
+    --pr: #6d28d9; --on-run: #ffffff;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f6f8fb; --bg-2: #eef2f7; --card: #ffffff; --card-2: #f8fafc; --line: #dbe3ee; --line-2: #c7d2e0;
+  --fg: #0f172a; --fg-2: #334155; --muted: #526175;
+  --run: #0e7490; --run-soft: rgba(14, 116, 144, .10);
+  --you: #b45309; --you-soft: rgba(180, 83, 9, .10);
+  --done: #15803d; --done-soft: rgba(21, 128, 61, .10);
+  --pr: #6d28d9; --on-run: #ffffff;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--sans); overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--run); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: min(var(--wrap), 100% - 32px); margin-inline: auto; }
+.mono { font-family: var(--mono); }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--run); color: var(--on-run); padding: 8px 14px; border-radius: 8px; z-index: 50; }
+.skip:focus { left: 16px; }
+
+/* grid paper behind the page, as on the board */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px; opacity: .28;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%); }
+
+/* nav */
+header.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
+.nav { display: flex; align-items: center; gap: 24px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 600 15px/1 var(--mono); letter-spacing: .12em; }
+.logo { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; background: linear-gradient(135deg, var(--run), #3b82f6);
+  color: #0b1120; font: 700 12px/1 var(--mono); letter-spacing: 0; }
+.nav nav { display: flex; gap: 4px; margin-left: auto; }
+.nav nav a { text-decoration: none; color: var(--fg-2); font-size: 15px; padding: 10px 12px; border-radius: 8px; min-height: 44px; display: inline-flex; align-items: center; }
+.nav nav a:hover { color: var(--fg); background: var(--card); }
+.gh { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border: 1px solid var(--line-2); border-radius: 10px;
+  padding: 0 14px; min-height: 44px; font: 500 14px/1 var(--mono); transition: border-color .2s, background .2s; }
+.gh:hover { border-color: var(--run); background: var(--run-soft); }
+.gh svg { width: 18px; height: 18px; }
+@media (max-width: 820px) { .nav nav { display: none; } .gh { margin-left: auto; } }
+
+/* hero */
+.hero { padding: 88px 0 40px; text-align: center; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; font: 500 13px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--run); border: 1px solid color-mix(in srgb, var(--run) 40%, transparent); background: var(--run-soft); padding: 9px 14px; border-radius: 999px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 0 currentColor; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent); } 80%, 100% { box-shadow: 0 0 0 8px transparent; } }
+h1 { font: 700 clamp(38px, 6.4vw, 76px)/1.04 var(--sans); letter-spacing: -.035em; margin: 26px auto 0; max-width: 15ch; text-wrap: balance; }
+h1 .hl { background: linear-gradient(90deg, var(--run), #60a5fa 55%, var(--pr)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { font-size: clamp(18px, 2.1vw, 21px); color: var(--fg-2); max-width: 60ch; margin: 22px auto 0; text-wrap: pretty; }
+.ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+.btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 600 16px/1 var(--sans); padding: 0 22px; min-height: 50px;
+  border-radius: 12px; border: 1px solid var(--line-2); transition: transform .15s, background .2s, border-color .2s; cursor: pointer; }
+.btn:hover { transform: translateY(-1px); border-color: var(--run); }
+.btn.primary { background: var(--run); color: var(--on-run); border-color: var(--run); }
+.btn.primary:hover { background: color-mix(in srgb, var(--run) 86%, #fff); }
+.btn svg { width: 18px; height: 18px; }
+.facts { display: flex; gap: 10px 26px; justify-content: center; flex-wrap: wrap; margin-top: 30px; color: var(--muted); font: 400 14px/1.4 var(--mono); }
+.facts span { display: inline-flex; align-items: center; gap: 8px; }
+.facts b { color: var(--fg-2); font-weight: 600; }
+
+/* browser frame around real screenshots */
+.shot { margin: 56px auto 0; max-width: 1120px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--card); overflow: hidden;
+  box-shadow: 0 40px 120px -30px rgba(34, 211, 238, .28), 0 30px 60px -30px rgba(0, 0, 0, .6); }
+.bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-bottom: 1px solid var(--line); background: var(--card-2); }
+.bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line-2); }
+.bar .url { margin-left: 12px; font: 400 12.5px/1 var(--mono); color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; }
+.shot img { width: 100%; height: auto; aspect-ratio: 1920 / 1200; object-fit: cover; object-position: top; }
+.hero .shot { transform: perspective(1800px) rotateX(5deg); transform-origin: top center; transition: transform .6s ease; }
+.hero .shot:hover { transform: none; }
+
+/* sections */
+section { padding: 96px 0 0; }
+.kicker { font: 600 13px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--run); }
+h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; margin: 14px 0 0; max-width: 22ch; text-wrap: balance; }
+.sub { color: var(--fg-2); max-width: 64ch; margin: 16px 0 0; }
+
+/* production line */
+.line { margin-top: 44px; position: relative; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
+.line::before { content: ""; position: absolute; left: 4%; right: 4%; top: 34px; height: 4px; border-radius: 4px;
+  background: repeating-linear-gradient(90deg, var(--line-2) 0 14px, transparent 14px 22px); }
+.belt-ticket { position: absolute; top: 25px; left: 4%; width: 22px; height: 22px; border-radius: 6px; background: var(--run);
+  box-shadow: 0 0 22px var(--run); animation: travel 9s cubic-bezier(.6, 0, .4, 1) infinite; }
+@keyframes travel { 0% { left: 4%; opacity: 0; } 6% { opacity: 1; } 88% { opacity: 1; } 100% { left: calc(96% - 22px); opacity: 0; } }
+.st { position: relative; text-align: center; }
+.st .node { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--card);
+  border: 2px solid var(--line-2); position: relative; z-index: 1; color: var(--fg-2); transition: border-color .3s, color .3s; }
+.st .node svg { width: 28px; height: 28px; }
+.st.judge .node { border-color: var(--done); color: var(--done); }
+.st.agent .node { border-color: color-mix(in srgb, var(--run) 60%, var(--line-2)); color: var(--run); }
+.st h3 { font: 600 15px/1.25 var(--sans); margin: 14px 0 4px; }
+.st p { margin: 0; font: 400 12.5px/1.4 var(--mono); color: var(--muted); }
+@media (max-width: 900px) {
+  .line { grid-template-columns: 1fr; gap: 0; }
+  .line::before { left: 35px; right: auto; top: 20px; bottom: 20px; width: 4px; height: auto;
+    background: repeating-linear-gradient(180deg, var(--line-2) 0 14px, transparent 14px 22px); }
+  .belt-ticket { display: none; }
+  .st { display: grid; grid-template-columns: 72px 1fr; gap: 0 18px; text-align: left; align-items: center; padding: 8px 0; }
+  .st h3 { margin: 0; } .st div { grid-column: 2; }
+}
+.st div { min-width: 0; }
+
+/* principles */
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 44px; }
+@media (max-width: 1000px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .grid4 { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; position: relative; overflow: hidden;
+  transition: border-color .25s, transform .25s; }
+.card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.card .ic { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; background: var(--run-soft); color: var(--run); }
+.card .ic svg { width: 22px; height: 22px; }
+.card.you .ic { background: var(--you-soft); color: var(--you); }
+.card.done .ic { background: var(--done-soft); color: var(--done); }
+.card.pr .ic { background: color-mix(in srgb, var(--pr) 16%, transparent); color: var(--pr); }
+.card h3 { font: 600 19px/1.3 var(--sans); margin: 18px 0 8px; }
+.card p { margin: 0; color: var(--fg-2); font-size: 15.5px; }
+
+/* gallery */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 40px; padding: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; width: fit-content; max-width: 100%; }
+.tabs button { font: 500 14px/1 var(--mono); color: var(--fg-2); background: transparent; border: 0; border-radius: 8px; padding: 0 16px; min-height: 44px; cursor: pointer; transition: background .2s, color .2s; }
+.tabs button:hover { color: var(--fg); background: var(--card-2); }
+.tabs button[aria-selected="true"] { background: var(--run); color: var(--on-run); }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; margin-top: 18px; }
+.panel[hidden] { display: none; }
+.panel .shot { margin: 0; max-width: none; }
+.panel .shot img { aspect-ratio: auto; }
+.panel h3 { font: 600 22px/1.25 var(--sans); margin: 4px 0 10px; }
+.panel p { margin: 0 0 12px; color: var(--fg-2); font-size: 16px; }
+.panel ul { margin: 0; padding: 0; list-style: none; }
+.panel li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--line); color: var(--fg-2); font-size: 15px; }
+.panel li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; background: var(--run); }
+@media (max-width: 980px) { .panel { grid-template-columns: 1fr; } }
+
+/* legend chips (colours of the board) */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1 var(--mono); padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg-2); }
+.chip i { width: 10px; height: 10px; border-radius: 3px; }
+
+/* split: dark mode + phone */
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 48px; align-items: center; margin-top: 44px; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+.steps { counter-reset: s; margin: 0; padding: 0; list-style: none; }
+.steps li { counter-increment: s; position: relative; padding: 0 0 22px 52px; }
+.steps li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 0; font: 600 13px/1 var(--mono); color: var(--run);
+  border: 1px solid color-mix(in srgb, var(--run) 45%, transparent); border-radius: 8px; padding: 7px 7px; background: var(--run-soft); }
+.steps li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: 6px; width: 1px; background: var(--line-2); }
+.steps b { display: block; font-weight: 600; margin-bottom: 2px; }
+.steps span { color: var(--fg-2); font-size: 15.5px; }
+.phone { justify-self: center; width: min(320px, 100%); border-radius: 36px; padding: 10px; background: var(--card-2); border: 1px solid var(--line-2);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .55), 0 0 80px -30px rgba(34, 211, 238, .35); }
+.phone img { border-radius: 27px; width: 100%; height: auto; }
+
+/* terminal */
+.term { background: #070b16; color: #e2e8f0; border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden; }
+.term .bar { background: #0d1426; border-color: #1e293b; }
+.term .bar .url { background: #070b16; border-color: #1e293b; color: #94a3b8; }
+.term pre { margin: 0; padding: 22px 24px; font: 400 14.5px/1.75 var(--mono); overflow-x: auto; }
+.term .c { color: #64748b; } .term .p { color: #22d3ee; user-select: none; } .term .ok { color: #4ade80; }
+.copy { margin-left: auto; font: 500 12.5px/1 var(--mono); color: #94a3b8; background: transparent; border: 1px solid #1e293b; border-radius: 7px; padding: 0 12px; min-height: 32px; cursor: pointer; }
+.copy:hover { color: #e2e8f0; border-color: #334155; }
+.need { display: grid; gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
+.need li { display: flex; gap: 12px; align-items: flex-start; color: var(--fg-2); font-size: 16px; }
+.need svg { flex: none; width: 20px; height: 20px; color: var(--done); margin-top: 3px; }
+.split.wide-right { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+@media (max-width: 900px) { .split.wide-right { grid-template-columns: 1fr; } }
+code { white-space: nowrap; font: 500 .9em/1 var(--mono); background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+
+/* closing */
+.closing { margin: 110px 0 0; padding: 64px 24px; text-align: center; border-radius: 22px; border: 1px solid var(--line-2);
+  background: radial-gradient(ellipse at 50% 0%, var(--run-soft), transparent 70%), var(--card); }
+.closing h2 { margin-inline: auto; }
+.closing .sub { margin-inline: auto; }
+footer { padding: 48px 0 56px; color: var(--muted); font: 400 14px/1.6 var(--mono); }
+footer .wrap { display: flex; gap: 12px 28px; flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 28px; }
+footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: var(--run); }
+
+/* reveal on scroll */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1; transform: none; }
+  .hero .shot { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Zum Inhalt springen</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gh" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a4 4 0 0 0 6 0L5 7Zm14 0-3 7a4 4 0 0 0 6 0l-3-7Z"/></symbol>
+  <symbol id="i-pr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v7M18 15.5V9a3 3 0 0 0-3-3h-4m0 0 2.5-2.5M11 6l2.5 2.5"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
+  <symbol id="i-git" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 7.5v9M18 11.5c0 4-6 3-11 5.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Software Factory, nach oben"><span class="logo" aria-hidden="true">SF</span>SOFTWARE_FACTORY</a>
+    <nav aria-label="Abschnitte">
+      <a href="#ablauf">Ablauf</a>
+      <a href="#prinzipien">Prinzipien</a>
+      <a href="#board">Board</a>
+      <a href="#start">Schnellstart</a>
+    </nav>
+    <a class="gh" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>GitHub</a>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap hero" id="top">
+    <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Open Source · MIT</span>
+    <h1>Aus Issues werden <span class="hl">geprüfte Pull&nbsp;Requests</span></h1>
+    <p class="lead">Ein Label an einem GitHub-Issue setzt ein Fließband in Gang: Claude-Agents planen, bauen und prüfen den Code. Ein getrennter Richter testet das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#start"><svg aria-hidden="true"><use href="#i-terminal"/></svg>Schnellstart</a>
+      <a class="btn" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>Code ansehen</a>
+    </div>
+    <div class="facts">
+      <span><b>8</b> Stationen</span>
+      <span><b>1</b> Steuerskript, kein Agent am Steuer</span>
+      <span><b>0</b> Tokens für Agents</span>
+      <span>GitHub Actions oder lokal</span>
+    </div>
+    <figure class="shot" style="margin-top:56px">
+      <div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">127.0.0.1:8787 · Board</span></div>
+      <img src="assets/board-kanban-dark.webp" width="1920" height="1200" alt="Das Board der Software Factory: oben vier Kennzahlen, darunter drei Tickets, die auf eine Antwort oder einen Merge warten, und das Fließband mit den Spalten Eingang, Planung, Umsetzung und Prüfung." fetchpriority="high">
+    </figure>
+  </div>
+
+  <section id="ablauf" class="wrap reveal" aria-labelledby="h-ablauf">
+    <div class="kicker">Ablauf eines Tickets</div>
+    <h2 id="h-ablauf">Acht Stationen. Jede beginnt mit frischem Kontext.</h2>
+    <p class="sub">Jede Station sieht nur die Dateien ihrer Vorgänger. Ein normales Python-Skript führt sie in fester Reihenfolge aus, zählt Runden und Budget und hält an einem Limit an.</p>
+    <div class="line" role="list">
+      <span class="belt-ticket" aria-hidden="true"></span>
+      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span><div><h3>Eingang</h3><p>Haiku · fester Auftrag</p></div></div>
+      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-map"/></svg></span><div><h3>Planer</h3><p>Fable · Tasks mit Kriterien</p></div></div>
+      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><div><h3>Plan-Prüfung</h3><p>Opus · frischer Prüfer</p></div></div>
+      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-code"/></svg></span><div><h3>Implementierer</h3><p>Sonnet · parallel je Task</p></div></div>
+      <div class="st" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><h3>Checks</h3><p>die Tests deines Projekts</p></div></div>
+      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-git"/></svg></span><div><h3>Reviewer</h3><p>Opus · liest den Diff</p></div></div>
+      <div class="st judge" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><div><h3>Richter</h3><p>Opus · verborgene Szenarien</p></div></div>
+      <div class="st" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-pr"/></svg></span><div><h3>Auslieferung</h3><p>Pull Request oder Merge</p></div></div>
+    </div>
+  </section>
+
+  <section id="prinzipien" class="wrap reveal" aria-labelledby="h-prinzipien">
+    <div class="kicker">Warum es trägt</div>
+    <h2 id="h-prinzipien">Vorhersagbar wie ein Skript, gründlich wie ein Team.</h2>
+    <div class="grid4">
+      <article class="card"><span class="ic"><svg aria-hidden="true"><use href="#i-cpu"/></svg></span><h3>Ein Skript steuert</h3><p>Reihenfolge, Runden, Budget und Parallelität entscheidet <code>pipeline.py</code>, kein Agent. Das ist testbar, und ein Limit hält zuverlässig an.</p></article>
+      <article class="card done"><span class="ic"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><h3>Ein Richter, der mehr weiß</h3><p>Szenarien liegen in einem eigenen Repo. Der Richter gibt nur Wert und Fehlerbild heraus, nie den Szenario-Text. Auf den Test hin bauen geht nicht.</p></article>
+      <article class="card pr"><span class="ic"><svg aria-hidden="true"><use href="#i-git"/></svg></span><h3>Parallele Arbeiter</h3><p>Unabhängige Tasks laufen gleichzeitig, jeder in einem eigenen Git-Worktree. Das Skript führt ihre Commits zusammen; Checks und Richter prüfen das Ganze.</p></article>
+      <article class="card you"><span class="ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span><h3>Agents ohne Schlüssel</h3><p>Agents und Checks bekommen keinen GitHub-Token. Änderungen an <code>.github/</code> und <code>.factory/</code> werden vor jedem Commit verworfen.</p></article>
+    </div>
+  </section>
+
+  <section id="board" class="wrap reveal" aria-labelledby="h-board">
+    <div class="kicker">Das Board</div>
+    <h2 id="h-board">Du siehst jedes Ticket auf dem Band.</h2>
+    <p class="sub">Ein lokales Board zeigt alle Projekte live: was läuft, was dich braucht und was fertig ist. Vier Ansichten für dasselbe Band, hell oder dunkel. Alle Bilder hier sind echte Aufnahmen des Boards.</p>
+    <div class="legend" aria-label="Farben des Boards">
+      <span class="chip"><i style="background:var(--run)"></i>läuft</span>
+      <span class="chip"><i style="background:var(--you)"></i>braucht dich</span>
+      <span class="chip"><i style="background:var(--pr)"></i>Pull Request</span>
+      <span class="chip"><i style="background:var(--done)"></i>fertig</span>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Ansichten des Boards">
+      <button role="tab" id="t-signal" aria-controls="p-signal" aria-selected="true">Stellwerk</button>
+      <button role="tab" id="t-ticket" aria-controls="p-ticket" aria-selected="false" tabindex="-1">Ticket</button>
+      <button role="tab" id="t-time" aria-controls="p-time" aria-selected="false" tabindex="-1">Fahrplan</button>
+      <button role="tab" id="t-line" aria-controls="p-line" aria-selected="false" tabindex="-1">Linie</button>
+      <button role="tab" id="t-light" aria-controls="p-light" aria-selected="false" tabindex="-1">Hell</button>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-signal" aria-labelledby="t-signal">
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Stellwerk</span></div>
+        <img src="assets/flow-signal-dark.webp" width="1920" height="1200" loading="lazy" alt="Stellwerk-Ansicht: die Stationen als Knoten eines Netzes, Linien zeigen, wie viele Tickets von Station zu Station gingen; ein gelber Ast führt zu dir."></figure>
+      <div><h3>Wo staut es sich?</h3><p>Das Netz der Stationen zeigt, wo Tickets liegen und wie sie fließen.</p>
+        <ul><li>Kreisgröße: Tickets an einer Station</li><li>Linienstärke: Durchsatz im Zeitraum</li><li>Gelber Ast: was gerade auf dich wartet</li></ul></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p-ticket" aria-labelledby="t-ticket" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Ticket #7 · Ablauf</span></div>
+        <img src="assets/ticket-dark.webp" width="1920" height="1200" loading="lazy" alt="Ein geöffnetes Ticket: Fortschritt über neun Stationen, Arbeitszeit und Durchlauf, darunter der Ablauf mit Eingang, Planer, Plan-Prüfung, Implementierer, Checks und Review samt Modell und Dauer."></figure>
+      <div><h3>Jeder Schritt nachvollziehbar</h3><p>Ein Klick auf eine Karte öffnet den Ablauf des Tickets.</p>
+        <ul><li>Modell, Effort und Dauer je Station</li><li>Was ein Agent getan hat, klappt auf</li><li>Anhalten oder neu starten, direkt hier</li></ul></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p-time" aria-labelledby="t-time" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Fahrplan</span></div>
+        <img src="assets/flow-timetable-light.webp" width="1920" height="1200" loading="lazy" alt="Fahrplan-Ansicht in Hell: je Ticket eine Zeile auf einer Zeitachse, farbige Abschnitte für Planung, Umsetzung, Prüfung und Warten auf dich."></figure>
+      <div><h3>Wohin ging die Zeit?</h3><p>Der Fahrplan legt jedes Ticket auf eine Zeitachse.</p>
+        <ul><li>Farbige Abschnitte je Phase</li><li>Wartezeit auf einen Platz und auf dich</li><li>Zeitraum 12 h, 36 h oder 7 Tage</li></ul></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p-line" aria-labelledby="t-line" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Linie</span></div>
+        <img src="assets/flow-line-dark.webp" width="1920" height="1200" loading="lazy" alt="Linien-Ansicht: Spalten von Eingang bis Fertig, Tickets warten auf Runner oder laufen, darunter die Liste der automatisch gemergten Tickets."></figure>
+      <div><h3>Das Band von der Seite</h3><p>Die Linie zeigt jede Station als Abschnitt der Halle.</p>
+        <ul><li>Durchsatz und typische Dauer je Station</li><li>Runner und geteilte Tickets</li><li>Fertige Tickets mit Urteil des Richters</li></ul></div>
+    </div>
+    <div class="panel" role="tabpanel" id="p-light" aria-labelledby="t-light" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Board · Hell</span></div>
+        <img src="assets/board-kanban-light.webp" width="1920" height="1200" loading="lazy" alt="Das Board in der hellen Darstellung mit denselben Kennzahlen, wartenden Tickets und Kanban-Spalten."></figure>
+      <div><h3>Hell oder dunkel</h3><p>Jedes Theme hat eine helle und eine dunkle Seite; Auto folgt deinem System.</p>
+        <ul><li>Kanban, Linie, Fahrplan und Stellwerk</li><li>Einstellungen im Browser, ohne YAML</li><li>Projekt anhalten mit einem Knopf</li></ul></div>
+    </div>
+  </section>
+
+  <section id="dark" class="wrap reveal" aria-labelledby="h-dark">
+    <div class="split">
+      <div>
+        <div class="kicker">Dark-Modus</div>
+        <h2 id="h-dark">Wenn du willst, ganz ohne Menschen.</h2>
+        <p class="sub">Im Dark-Modus sind Plan-Prüfung, Review und Richter Tore, und die Factory mergt einen Pull Request selbst, wenn alle Regeln erfüllt sind. Ohne Dark-Modus wartet er auf dich. Du schaltest ihn je Projekt ein.</p>
+        <ol class="steps" style="margin-top:30px">
+          <li><b>Label setzen</b><span><code>factory:go</code> an einem Issue startet das Ticket.</span></li>
+          <li><b>Rückfragen beantworten</b><span>Ist der Auftrag unklar, fragt der Eingang im Issue nach.</span></li>
+          <li><b>Großen Plan freigeben</b><span>Mit <code>/approve</code> im Issue, oder mit einem Änderungswunsch.</span></li>
+          <li><b>Mergen oder mergen lassen</b><span>Von Hand, oder im Dark-Modus automatisch nach dem Richter.</span></li>
+        </ol>
+      </div>
+      <div class="phone"><img src="assets/board-mobile-dark.webp" width="600" height="1299" loading="lazy" alt="Das Board auf einem Telefon: Kennzahlen und wartende Tickets untereinander."></div>
+    </div>
+  </section>
+
+  <section id="start" class="wrap reveal" aria-labelledby="h-start">
+    <div class="split wide-right">
+      <div>
+        <div class="kicker">Schnellstart</div>
+        <h2 id="h-start">In vier Befehlen am Laufen.</h2>
+        <ul class="need">
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Python 3.12</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>GitHub CLI <code>gh</code>, angemeldet</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Claude Code mit einem Claude-Abo; für GitHub das Secret aus <code>claude setup-token</code></span></li>
+        </ul>
+        <p class="sub">Im Board „+ Projekt verbinden“ wählen. Die Seite legt Labels, Workflow und Profil per Pull Request in deinem Repo an.</p>
+      </div>
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><span class="url">zsh</span><button class="copy" type="button" data-copy="git clone https://github.com/HanSur94/software-factory.git&#10;cd software-factory&#10;pip install -r requirements.txt&#10;python3 -m factory board">Kopieren</button></div>
+<pre><span class="c"># holen und starten</span>
+<span class="p">$ </span>git clone https://github.com/HanSur94/software-factory.git
+<span class="p">$ </span>cd software-factory
+<span class="p">$ </span>pip install -r requirements.txt
+<span class="p">$ </span>python3 -m factory board
+<span class="ok">Board läuft auf http://127.0.0.1:8787</span>
+
+<span class="c"># oder ein Ticket ganz lokal, ohne GitHub</span>
+<span class="p">$ </span>python3 -m factory local --repo ../mein-projekt \
+    --issue 1 --issue-file ticket.md --budget 5</pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="closing reveal">
+      <div class="kicker">Mitmachen</div>
+      <h2>Bau mit an der Fabrik.</h2>
+      <p class="sub">Die Software Factory ist freie Software unter MIT. Fehler, Ideen und Pull Requests sind willkommen.</p>
+      <div class="ctas">
+        <a class="btn primary" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>Auf GitHub</a>
+        <a class="btn" href="https://github.com/HanSur94/software-factory/blob/main/CONTRIBUTING.md">So trägst du bei<svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Software Factory · MIT-Lizenz</span>
+    <span><a href="https://github.com/HanSur94/software-factory">GitHub</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/README.md">Dokumentation</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/SECURITY.md">Sicherheit</a></span>
+  </div>
+</footer>
+
+<script>
+// Tabs: arrow keys move between them, as the ARIA pattern expects.
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function pick(t, focus) {
+  tabs.forEach(b => {
+    const on = b === t;
+    b.setAttribute("aria-selected", String(on));
+    b.tabIndex = on ? 0 : -1;
+    document.getElementById(b.getAttribute("aria-controls")).hidden = !on;
+  });
+  if (focus) t.focus();
+}
+tabs.forEach((t, i) => {
+  t.addEventListener("click", () => pick(t));
+  t.addEventListener("keydown", e => {
+    const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (d) { e.preventDefault(); pick(tabs[(i + d + tabs.length) % tabs.length], true); }
+    if (e.key === "Home") { e.preventDefault(); pick(tabs[0], true); }
+    if (e.key === "End") { e.preventDefault(); pick(tabs[tabs.length - 1], true); }
+  });
+});
+// Copy button for the quick start.
+document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Kopiert"; }
+  catch { b.textContent = "Bitte markieren"; }
+  setTimeout(() => (b.textContent = "Kopieren"), 1800);
+}));
+// Sections fade in once they come into view.
+const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+}), { rootMargin: "0px 0px -10% 0px" }) : null;
+document.querySelectorAll(".reveal").forEach(el => io ? io.observe(el) : el.classList.add("in"));
+</script>
+</body>
+</html>
