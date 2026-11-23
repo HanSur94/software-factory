@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "judge-result/1",
+  "description": "Written by the judge agent inside the judge job. Never leaves that job; the pipeline turns it into verdict.json.",
+  "type": "object",
+  "required": ["schema", "results"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "judge-result/1" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "satisfied"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^S[0-9a-f]{8}$" },
+          "satisfied": { "type": "boolean" },
+          "symptom": { "type": "string" }
+        }
+      }
+    }
+  }
+}

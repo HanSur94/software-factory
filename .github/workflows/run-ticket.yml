@@ -1,0 +1,252 @@
+name: factory run-ticket
+
+# Called from a product repository (templates/product/.github/workflows/factory.yml).
+# Four jobs, because they need different rights:
+#   route    reads the project profile and picks the runners
+#   work     intake, plan, plan check, implementation, checks, review; pushes the ticket branch
+#   judge    the only job that sees the holdout scenarios; only verdict.json leaves it
+#   deliver  acts on the verdict: pull request, or the next round
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Where the small control jobs of the factory run, as JSON for runs-on (a self-hosted label such as factory-mac keeps everything on one machine)
+        type: string
+        default: '["ubuntu-latest"]'
+      # Text, not a number: a number computed by an expression in the caller
+      # keeps this workflow from starting.
+      issue:
+        type: string
+        required: true
+      dry_run:
+        description: Canned station outputs instead of model calls; tests the plumbing
+        type: boolean
+        default: false
+      base:
+        description: Branch tickets start from and pull requests target; empty means the default branch
+        type: string
+        default: ''
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: false
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: false
+      SCENARIOS_DEPLOY_KEY:
+        required: false
+
+permissions: {}
+
+env:
+  FACTORY_BASE: ${{ inputs.base || github.event.repository.default_branch }}
+  FACTORY_FAKE_AGENT: ${{ inputs.dry_run && '1' || '0' }}
+  FACTORY_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+
+jobs:
+  route:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      work_runner: ${{ steps.route.outputs.work_runner }}
+      work_sandboxed: ${{ steps.route.outputs.work_sandboxed }}
+      judge_runner: ${{ steps.route.outputs.judge_runner }}
+      judge_sandboxed: ${{ steps.route.outputs.judge_sandboxed }}
+      scenarios_repo: ${{ steps.route.outputs.scenarios_repo }}
+      agent_version: ${{ steps.route.outputs.agent_version }}
+      work_install: ${{ steps.route.outputs.work_install }}
+      judge_install: ${{ steps.route.outputs.judge_install }}
+    steps:
+      # A self-hosted runner keeps its checkout, and git still lists the worktrees the factory
+      # made in RUNNER_TEMP, which is gone now. Those worktrees hold their branches, so the
+      # checkout below cannot delete them and recreates the whole directory instead, losing
+      # every build cache in it (Unity's Library/). Pruning releases them first.
+      - name: Release worktrees of earlier jobs
+        if: runner.environment != 'github-hosted'
+        shell: bash
+        run: git -C "$GITHUB_WORKSPACE" worktree prune 2>/dev/null || true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base || github.event.repository.default_branch }}
+          # Only .factory is needed here. On a self-hosted runner the checkout is shared with the
+          # later jobs: a sparse checkout makes it a partial clone that fetches missing files on
+          # demand, and those jobs have no credentials for that (persist-credentials: false).
+          sparse-checkout: ${{ runner.environment == 'github-hosted' && '.factory' || '' }}
+          persist-credentials: false
+          # A self-hosted runner keeps ignored build caches (Unity's Library/) in its checkout.
+          clean: ${{ runner.environment == 'github-hosted' }}
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
+        with:
+          python-version: '3.12'
+      - id: route
+        uses: HanSur94/software-factory@main
+        with:
+          command: route --repo .
+
+  work:
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.work_runner) }}
+    timeout-minutes: 180
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      # The work job starts runs itself: the parts of a split ticket, a handover to a new run
+      # when time runs out, and a waiting ticket when its own slot is free again.
+      actions: write
+    outputs:
+      status: ${{ steps.work.outputs.status }}
+      branch: ${{ steps.work.outputs.branch }}
+    steps:
+      # persist-credentials: false keeps the token out of .git/config, where an
+      # agent could use it. The factory passes it to its own git calls only.
+      # A self-hosted runner shares this folder with the project's own workflows, which keep build
+      # caches in ignored folders (Unity's Library/). clean: false leaves those alone; the step
+      # after it drops untracked files that are not ignored.
+      # A self-hosted runner keeps its checkout, and git still lists the worktrees the factory
+      # made in RUNNER_TEMP, which is gone now. Those worktrees hold their branches, so the
+      # checkout below cannot delete them and recreates the whole directory instead, losing
+      # every build cache in it (Unity's Library/). Pruning releases them first.
+      - name: Release worktrees of earlier jobs
+        if: runner.environment != 'github-hosted'
+        shell: bash
+        run: git -C "$GITHUB_WORKSPACE" worktree prune 2>/dev/null || true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base || github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+          clean: ${{ needs.route.outputs.work_sandboxed == '1' }}
+      - name: Drop untracked files
+        if: needs.route.outputs.work_sandboxed != '1'
+        run: git clean -ffd
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted' && (needs.route.outputs.work_sandboxed == '1')
+        with:
+          python-version: '3.12'
+      - name: Agent CLIs
+        if: ${{ !inputs.dry_run && needs.route.outputs.work_sandboxed == '1' && needs.route.outputs.work_install != '' }}
+        env:
+          PACKAGES: ${{ needs.route.outputs.work_install }}
+        run: npm install --global --silent $PACKAGES
+      - name: Skill packs
+        if: ${{ !inputs.dry_run }}
+        uses: HanSur94/software-factory@main
+        with:
+          command: fetch-plugins --repo .
+      - id: work
+        uses: HanSur94/software-factory@main
+        with:
+          command: work --repo . --issue ${{ inputs.issue }}
+        env:
+          FACTORY_CALLER_WORKFLOW: ${{ github.workflow_ref }}   # a hand-over starts the next run of it
+          FACTORY_GH_TOKEN: ${{ github.token }}
+          FACTORY_SANDBOXED: ${{ needs.route.outputs.work_sandboxed }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  judge:
+    needs: [route, work]
+    if: needs.work.outputs.status == 'ready_for_judge'
+    runs-on: ${{ fromJSON(needs.route.outputs.judge_runner) }}
+    # The deploy key is a repository secret that only this job references. With
+    # GitHub Pro or Team it can move into an environment: add a fixed
+    # "environment: factory-judge" line here. An expression in that field keeps
+    # the called workflow from starting at all, so it is not configurable.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      issues: read    # without a scenario repository the judge writes its scenarios from the issue
+    env:
+      HAS_SCENARIOS: ${{ needs.route.outputs.scenarios_repo != '' && secrets.SCENARIOS_DEPLOY_KEY != '' }}
+    steps:
+      # A self-hosted runner keeps its checkout, and git still lists the worktrees the factory
+      # made in RUNNER_TEMP, which is gone now. Those worktrees hold their branches, so the
+      # checkout below cannot delete them and recreates the whole directory instead, losing
+      # every build cache in it (Unity's Library/). Pruning releases them first.
+      - name: Release worktrees of earlier jobs
+        if: runner.environment != 'github-hosted'
+        shell: bash
+        run: git -C "$GITHUB_WORKSPACE" worktree prune 2>/dev/null || true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.work.outputs.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: product
+          # A self-hosted runner keeps ignored build caches (Unity's Library/) in its checkout.
+          clean: ${{ runner.environment == 'github-hosted' }}
+      - name: Holdout scenarios
+        if: env.HAS_SCENARIOS == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.route.outputs.scenarios_repo }}
+          ssh-key: ${{ secrets.SCENARIOS_DEPLOY_KEY }}
+          persist-credentials: false
+          path: scenarios
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted' && (needs.route.outputs.judge_sandboxed == '1')
+        with:
+          python-version: '3.12'
+      - name: Agent CLIs
+        if: ${{ !inputs.dry_run && needs.route.outputs.judge_sandboxed == '1' && needs.route.outputs.judge_install != '' }}
+        env:
+          PACKAGES: ${{ needs.route.outputs.judge_install }}
+        run: npm install --global --silent $PACKAGES
+      - uses: HanSur94/software-factory@main
+        with:
+          command: judge --repo product --issue ${{ inputs.issue }} --scenarios scenarios --out judge-out
+        env:
+          FACTORY_GH_TOKEN: ${{ github.token }}
+          FACTORY_SANDBOXED: ${{ needs.route.outputs.judge_sandboxed }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      # Only the verdict is uploaded. judge-out/private (logs, per-scenario results) stays here.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verdict-${{ inputs.issue }}
+          path: judge-out/verdict.json
+          retention-days: 14
+
+  deliver:
+    needs: [route, work, judge]
+    if: always() && needs.work.outputs.status == 'ready_for_judge'
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: write
+    steps:
+      # A self-hosted runner keeps its checkout, and git still lists the worktrees the factory
+      # made in RUNNER_TEMP, which is gone now. Those worktrees hold their branches, so the
+      # checkout below cannot delete them and recreates the whole directory instead, losing
+      # every build cache in it (Unity's Library/). Pruning releases them first.
+      - name: Release worktrees of earlier jobs
+        if: runner.environment != 'github-hosted'
+        shell: bash
+        run: git -C "$GITHUB_WORKSPACE" worktree prune 2>/dev/null || true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base || github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+          # A self-hosted runner keeps ignored build caches (Unity's Library/) in its checkout.
+          clean: ${{ runner.environment == 'github-hosted' }}
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: verdict-${{ inputs.issue }}
+          path: judge-out
+      - uses: HanSur94/software-factory@main
+        with:
+          command: deliver --repo . --issue ${{ inputs.issue }} --verdict judge-out/verdict.json
+        env:
+          FACTORY_GH_TOKEN: ${{ github.token }}
+          FACTORY_CALLER_WORKFLOW: ${{ github.workflow_ref }}

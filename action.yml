@@ -1,0 +1,40 @@
+name: Software Factory
+description: Runs one stage of the software factory from this repository at the pinned ref.
+
+# A composite action is how a workflow in a product repository gets the factory's
+# code without a token for this repository: the runner downloads the action, and
+# with it this whole repository, to GITHUB_ACTION_PATH.
+
+inputs:
+  command:
+    description: Sub-command and arguments, e.g. "work --repo . --issue 12"
+    required: true
+
+outputs:
+  status: { description: Outcome of the stage, value: "${{ steps.run.outputs.status }}" }
+  branch: { description: Ticket branch, value: "${{ steps.run.outputs.branch }}" }
+  work_runner: { description: runs-on of the work job as JSON, value: "${{ steps.run.outputs.work_runner }}" }
+  work_sandboxed: { description: 1 on throwaway runners, value: "${{ steps.run.outputs.work_sandboxed }}" }
+  judge_runner: { description: runs-on of the judge job as JSON, value: "${{ steps.run.outputs.judge_runner }}" }
+  judge_sandboxed: { description: 1 on throwaway runners, value: "${{ steps.run.outputs.judge_sandboxed }}" }
+  scenarios_repo: { description: Holdout repository, value: "${{ steps.run.outputs.scenarios_repo }}" }
+  agent_version: { description: Version of the default agent CLI, value: "${{ steps.run.outputs.agent_version }}" }
+  work_install: { description: npm packages the work job installs (agent CLIs), value: "${{ steps.run.outputs.work_install }}" }
+  judge_install: { description: npm packages the judge job installs (agent CLIs), value: "${{ steps.run.outputs.judge_install }}" }
+
+runs:
+  using: composite
+  steps:
+    - name: Dependencies
+      shell: bash
+      run: |
+        python3 -c "import yaml, jsonschema" 2>/dev/null \
+          || python3 -m pip install --quiet --disable-pip-version-check -r "$GITHUB_ACTION_PATH/requirements.txt"
+    - name: factory ${{ inputs.command }}
+      id: run
+      shell: bash
+      env:
+        FACTORY_COMMAND: ${{ inputs.command }}
+      run: |
+        export PYTHONPATH="$GITHUB_ACTION_PATH${PYTHONPATH:+:$PYTHONPATH}"
+        python3 -m factory $FACTORY_COMMAND

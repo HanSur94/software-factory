@@ -1,0 +1,792 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "config/1",
+  "description": "The configuration the factory runs with: factory.yaml, then settings.yaml, then a project's overrides. Checked after merging, so a wrong value stops a run with a message instead of misbehaving later.",
+  "type": "object",
+  "required": [
+    "roles",
+    "pipeline",
+    "verify",
+    "limits",
+    "runtime",
+    "storage",
+    "delivery",
+    "human"
+  ],
+  "$defs": {
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._\\[\\]-]*$"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "mode": {
+      "enum": [
+        "advisory",
+        "gate",
+        "off"
+      ]
+    },
+    "strings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "role": {
+      "type": "object",
+      "required": [
+        "model",
+        "effort",
+        "prompt",
+        "tools",
+        "budget_usd",
+        "timeout_minutes"
+      ],
+      "properties": {
+        "harness": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/harness"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        },
+        "effort": {
+          "$ref": "#/$defs/effort"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/model"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rework_prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tools": {
+          "enum": [
+            "read",
+            "write",
+            "run"
+          ]
+        },
+        "budget_usd": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "timeout_minutes": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "skills": {
+          "$ref": "#/$defs/strings"
+        },
+        "sensitive_skills": {
+          "$ref": "#/$defs/strings"
+        },
+        "entry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entry_args": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "harness": {
+      "description": "Agent CLI a station runs in (factory/harness). Without one: agent.harness, then claude.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "cli_version": {
+      "description": "npm version or tag of an agent CLI; goes into the runner's install command.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+    }
+  },
+  "properties": {
+    "roles": {
+      "type": "object",
+      "required": [
+        "intake",
+        "planner",
+        "plan_check",
+        "implementer",
+        "checks",
+        "reviewer",
+        "judge"
+      ],
+      "properties": {
+        "intake": {
+          "$ref": "#/$defs/role"
+        },
+        "planner": {
+          "$ref": "#/$defs/role"
+        },
+        "plan_check": {
+          "$ref": "#/$defs/role"
+        },
+        "implementer": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/role"
+            },
+            {
+              "required": [
+                "rework_prompt"
+              ]
+            }
+          ]
+        },
+        "checks": {
+          "$ref": "#/$defs/role"
+        },
+        "reviewer": {
+          "$ref": "#/$defs/role"
+        },
+        "judge": {
+          "$ref": "#/$defs/role"
+        },
+        "escalation": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "$ref": "#/$defs/model"
+            },
+            "effort": {
+              "$ref": "#/$defs/effort"
+            }
+          }
+        },
+        "backlog": {
+          "$ref": "#/$defs/role"
+        },
+        "scenario_writer": {
+          "$ref": "#/$defs/role"
+        },
+        "cartographer": {
+          "$ref": "#/$defs/role"
+        }
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "required": [
+        "modes",
+        "human_plan_approval_above",
+        "max_plan_rounds",
+        "max_rework_rounds",
+        "escalate_after",
+        "max_judge_rounds"
+      ],
+      "properties": {
+        "modes": {
+          "type": "object",
+          "properties": {
+            "plan_check": {
+              "$ref": "#/$defs/mode"
+            },
+            "review": {
+              "$ref": "#/$defs/mode"
+            },
+            "judge": {
+              "$ref": "#/$defs/mode"
+            }
+          }
+        },
+        "promote_after": {
+          "type": "object",
+          "properties": {
+            "agreement": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "tickets": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "human_plan_approval_above": {
+          "type": "object",
+          "required": [
+            "tasks"
+          ],
+          "properties": {
+            "tasks": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "max_plan_rounds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_rework_rounds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "escalate_after": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_judge_rounds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "advisory_judge_rounds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_ci_rounds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parallel_tasks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "questions": {
+          "enum": [
+            "ask",
+            "assume"
+          ],
+          "description": "ask: unclear points stop the ticket until the owner answers. assume: the stations decide themselves, note the assumption, and stop only for what only the owner can provide."
+        },
+        "max_run_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 = no limit. After this long a run starts no new task or check round: it hands the ticket to a new run of the workflow, so the job time limit (run-ticket.yml) never cuts work off."
+        },
+        "split_above_lines": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Above this many estimated changed lines every task of the plan becomes a ticket of its own; 0 turns it off."
+        }
+      }
+    },
+    "verify": {
+      "type": "object",
+      "required": [
+        "satisfaction_threshold"
+      ],
+      "properties": {
+        "satisfaction_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "max_changed_lines": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            }
+          }
+        },
+        "generated_scenarios": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        },
+        "keep_judge_sessions": {
+          "type": "boolean"
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "budget_usd_per_ticket"
+      ],
+      "properties": {
+        "budget_usd_per_ticket": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "protected_paths": {
+          "$ref": "#/$defs/strings"
+        },
+        "max_parallel_tickets": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 = no limit"
+        },
+        "daily_budget_usd": {
+          "type": "number",
+          "minimum": 0,
+          "description": "0 = no limit"
+        },
+        "min_free_disk_gb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "0 = no check. Before work and checks a ticket waits for this much free disk space; stops if it does not come."
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": [
+        "capabilities",
+        "jobs"
+      ],
+      "properties": {
+        "capabilities": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "provider",
+              "runs_on"
+            ],
+            "properties": {
+              "provider": {
+                "enum": [
+                  "github-hosted",
+                  "self-hosted"
+                ]
+              },
+              "runs_on": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/strings"
+                  },
+                  {
+                    "minItems": 1
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "jobs": {
+          "type": "object",
+          "required": [
+            "work",
+            "judge"
+          ],
+          "properties": {
+            "work": {
+              "type": "string"
+            },
+            "judge": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "required": [
+        "branch"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "human": {
+      "type": "object",
+      "required": [
+        "labels"
+      ],
+      "properties": {
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "required": [
+        "branch_prefix",
+        "author"
+      ],
+      "properties": {
+        "auto_merge": {
+          "type": "boolean"
+        },
+        "auto_merge_rules": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "enum": [
+                "squash",
+                "merge",
+                "rebase"
+              ]
+            },
+            "max_changed_lines": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "min_scenarios": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "allow_sensitive": {
+              "type": "boolean"
+            },
+            "require_judge": {
+              "type": "boolean"
+            },
+            "allow_assumptions": {
+              "type": "boolean"
+            }
+          }
+        },
+        "branch_prefix": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name",
+            "email"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "email": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        },
+        "trigger_workflows": {
+          "description": "Workflows of the project to start on the ticket branch once the pull request is open.",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]+\\.ya?ml$"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9._-]+\\.ya?ml$"
+                  },
+                  "inputs": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "closing_summary": {
+          "type": "boolean",
+          "description": "Write a closing report on the issue once its pull request is merged (factory/summary.py)."
+        }
+      }
+    },
+    "board": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "repos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          }
+        },
+        "local": {
+          "$ref": "#/$defs/strings"
+        },
+        "notify": {
+          "type": "boolean"
+        },
+        "stall_minutes": {
+          "type": "number",
+          "minimum": 1
+        },
+        "min_free_disk_gb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "watch_seconds": {
+          "type": "number",
+          "minimum": 10
+        },
+        "keepalive_minutes": {
+          "type": "number",
+          "minimum": 0
+        },
+        "show_cost": {
+          "type": "boolean"
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "harness": {
+          "$ref": "#/$defs/harness"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "$ref": "#/$defs/cli_version"
+        },
+        "versions": {
+          "description": "Version per harness; agent.version pins the default harness.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/cli_version"
+          }
+        },
+        "strict_mcp": {
+          "type": "boolean"
+        },
+        "rtk": {
+          "description": "RTK shortens what shell commands print before the agent reads it; acts only where rtk is installed.",
+          "type": "boolean"
+        },
+        "env_passthrough": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "repo",
+          "ref",
+          "enabled"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "orchestrator": {
+      "type": "object",
+      "properties": {
+        "max_auto_restarts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stale_minutes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "backlog": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "manual",
+            "auto"
+          ],
+          "description": "manual: proposals wait for the owner on the board; auto: they start at once."
+        },
+        "every_hours": {
+          "type": "number",
+          "minimum": 1
+        },
+        "max_proposals": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "closed_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "evidence": {
+      "description": "Pictures of a change: collected after green checks, stored on the state branch, shown on the board and in the pull request, looked at by reviewer and judge (factory/evidence.py).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_images": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40
+        },
+        "max_px": {
+          "type": "integer",
+          "minimum": 320,
+          "maximum": 4096
+        },
+        "max_kb": {
+          "type": "integer",
+          "minimum": 50
+        },
+        "reviewer_sees": {
+          "type": "boolean"
+        },
+        "judge_sees": {
+          "type": "boolean"
+        }
+      }
+    },
+    "machine": {
+      "description": "This machine: the board's machine page (factory/machine.py).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "heavy_processes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sample_seconds": {
+          "type": "number",
+          "minimum": 2,
+          "maximum": 300
+        },
+        "warn_load": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "warn_swap_gb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "orphan_minutes": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "map": {
+      "description": "The floor plan of each project (factory/floormap.py): drawn by the cartographer on the state branch, laid over every ticket.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "every_minutes": {
+          "type": "number",
+          "minimum": 1
+        },
+        "max_parts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "description": "Prompts changed on the settings page, keyed by the prompt file (stations/planner.md); the file is the default.",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+}

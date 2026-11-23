@@ -1,0 +1,138 @@
+name: factory
+
+# Verbindet dieses Repo mit der Software Factory.
+#
+#   Label "factory:go" am Issue      startet das Ticket (zählt nur, wenn der Besitzer es setzt)
+#   Label "factory:rework"           ein gelieferter PR bekommt eine Runde mit den Fehlerbildern des Richters
+#   Kommentar des Besitzers          setzt ein wartendes Ticket fort (Label "factory:waiting")
+#   Actions → factory → Run workflow startet ein Ticket von Hand, auf Wunsch als Trockenlauf
+#   Pull Request geschlossen         hält fest, ob du den Stand gemergt oder verworfen hast
+#   Zeitplan                         der Orchestrator schaut nach allen Tickets (unten: schedule)
+#   CI auf einem Factory-Branch      rot: das Ticket geht zur Nacharbeit zurück. Die CI meldet sich über
+#                                    report-ci.yml (workflow_dispatch mit ci_*), oder über workflow_run
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [closed]
+  # Die CI des Projekts auf einem Pull Request der Factory. Ist sie rot, geht das Ticket zur Nacharbeit
+  # zurück. Die Namen sind die `name:` der Workflows, die der Branch-Schutz verlangt.
+  # workflow_run:
+  #   workflows: [ci]
+  #   types: [completed]
+  #   branches: ['factory/**']
+  # Der Orchestrator: startet abgebrochene Läufe neu, holt verpasste CI-Ergebnisse nach und startet
+  # wartende Tickets. Stündlich kostet auf einem privaten Repo rund 720 Runner-Minuten im Monat.
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Nummer des Issues
+        type: number
+        required: false
+      dry_run:
+        description: Trockenlauf ohne Modellaufrufe
+        type: boolean
+        default: false
+      # Startet nur den Orchestrator. Das Board setzt es, wenn GitHub den Zeitplan auslässt.
+      orchestrate:
+        description: Nur den Orchestrator laufen lassen
+        type: boolean
+        default: false
+      # Gesetzt von report-ci.yml am Ende eines CI-Workflows auf einem Factory-Branch, nicht von Hand.
+      ci_branch:
+        description: (nur für die CI) Branch des Tickets
+        type: string
+        default: ''
+      ci_workflow:
+        description: (nur für die CI) Name des CI-Workflows
+        type: string
+        default: ''
+      ci_conclusion:
+        description: (nur für die CI) Ergebnis
+        type: string
+        default: ''
+      ci_run_id:
+        description: (nur für die CI) Lauf
+        type: string
+        default: ''
+      ci_sha:
+        description: (nur für die CI) Commit
+        type: string
+        default: ''
+
+# A called workflow can never get more than this. orchestrate.yml asks for checks: read; without it
+# GitHub rejects the whole file and every run fails at startup.
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+  checks: read
+
+# Ein Ticket läuft nie doppelt; verschiedene Tickets laufen nebeneinander.
+concurrency:
+  group: factory-${{ github.event.issue.number || inputs.issue || github.event.pull_request.head.ref || github.event.workflow_run.head_branch || inputs.ci_branch }}
+  cancel-in-progress: false
+
+jobs:
+  ticket:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && !inputs.ci_branch && !inputs.orchestrate) ||
+      (github.event_name == 'issues'
+        && (github.event.label.name == 'factory:go' || github.event.label.name == 'factory:rework')
+        && github.event.sender.login == github.repository_owner) ||
+      (github.event_name == 'issue_comment'
+        && !github.event.issue.pull_request
+        && github.event.sender.login == github.repository_owner
+        && contains(github.event.issue.labels.*.name, 'factory:waiting'))
+    uses: HanSur94/software-factory/.github/workflows/run-ticket.yml@main
+    with:
+      issue: ${{ format('{0}', github.event.issue.number || inputs.issue) }}
+      dry_run: ${{ inputs.dry_run == true }}
+      # Tickets starten von diesem Branch, und Pull Requests zielen auf ihn. Ohne die Zeile: der Standard-Branch.
+      # base: develop
+      # Die kleinen Steuer-Jobs auf eigenen Runnern statt auf GitHubs, etwa alles auf einem Mac:
+      # runner: '["factory-mac"]'
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      SCENARIOS_DEPLOY_KEY: ${{ secrets.SCENARIOS_DEPLOY_KEY }}
+
+  outcome:
+    if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'factory/')
+    uses: HanSur94/software-factory/.github/workflows/record-outcome.yml@main
+    with:
+      branch: ${{ github.event.pull_request.head.ref }}
+      merged: ${{ github.event.pull_request.merged }}
+      # base: develop
+      # Die kleinen Steuer-Jobs auf eigenen Runnern statt auf GitHubs, etwa alles auf einem Mac:
+      # runner: '["factory-mac"]'
+
+  ci:
+    if: >-
+      (github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'factory/')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(inputs.ci_branch, 'factory/'))
+    uses: HanSur94/software-factory/.github/workflows/ci-result.yml@main
+    with:
+      branch: ${{ github.event.workflow_run.head_branch || inputs.ci_branch }}
+      workflow: ${{ github.event.workflow_run.name || inputs.ci_workflow }}
+      conclusion: ${{ github.event.workflow_run.conclusion || inputs.ci_conclusion }}
+      run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || inputs.ci_run_id }}
+      sha: ${{ github.event.workflow_run.head_sha || inputs.ci_sha }}
+      # base: develop
+      # Die kleinen Steuer-Jobs auf eigenen Runnern statt auf GitHubs, etwa alles auf einem Mac:
+      # runner: '["factory-mac"]'
+
+  orchestrate:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.orchestrate)
+    uses: HanSur94/software-factory/.github/workflows/orchestrate.yml@main
+    # with:
+    #   base: develop
+    # Only the backlog planner (backlog.enabled in the profile) needs these.
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

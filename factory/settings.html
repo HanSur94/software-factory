@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software Factory · Einstellungen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/theme.css">
+<script src="/theme.js"></script>
+<style>
+  body { padding-bottom: 84px; }
+  .layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 28px; max-width: 1280px; padding: 22px 20px 0; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 14px; padding: 16px 16px 0; } aside.side { position: static !important; } }
+  aside.side { position: sticky; top: calc(var(--appbar) + 22px); align-self: start; display: flex; flex-direction: column; gap: 18px; }
+  aside.side .eyebrow { margin: 0 0 8px 2px; }
+  #scopes { display: flex; flex-direction: column; gap: 3px; }
+  @media (max-width: 860px) { #scopes { flex-direction: row; flex-wrap: wrap; } }
+  #scopes button { display: flex; align-items: center; gap: 9px; text-align: left; border: 1px solid transparent; background: transparent; color: var(--text-2);
+    border-radius: var(--r); font: 500 12.5px var(--mono); padding: 7px 10px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #scopes button::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--line-2); flex: none; }
+  #scopes button:hover { background: var(--surface); color: var(--text); }
+  #scopes button[aria-pressed="true"] { background: var(--surface-2); border-color: var(--line-2); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+  #scopes button[aria-pressed="true"]::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  #scopes button.add { color: var(--accent); border: 1px dashed var(--line-2); margin-top: 6px; }
+  #scopes button.add::before { content: "+"; width: auto; height: auto; background: none; font-weight: 700; box-shadow: none !important; }
+  #toc { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+  #toc a { font-size: 12.5px; color: var(--muted); padding: 4px 12px; margin-left: -1px; border-left: 1px solid transparent; }
+  @media (max-width: 860px) { #toc, #toc + *, .side > div:last-child { display: none; } }
+  #toc a:hover { color: var(--text); border-left-color: var(--line-2); text-decoration: none; }
+
+  .pagehead h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .pagehead h1 .scope { font-family: var(--mono); font-size: 15px; color: var(--accent); font-weight: 500; margin-left: 8px; }
+  #hint { color: var(--muted); font-size: 13px; margin: 0 0 18px; max-width: 820px; }
+  #msg:not(:empty) { margin: 0 0 14px; font-size: 13px; padding: 10px 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line-2); }
+  #msg ul { margin: 4px 0; padding-left: 18px; font-family: var(--mono); font-size: 12px; }
+
+  section.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px 18px; margin: 0 0 14px; scroll-margin-top: calc(var(--appbar) + 16px); }
+  section.box > h2 { display: flex; align-items: center; gap: 10px; font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; margin: 0 0 4px; color: var(--text); }
+  section.box > h2::before { content: "//"; color: var(--accent); font-weight: 500; }
+  section.box > p { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; max-width: 820px; }
+  h3 { display: flex; align-items: center; gap: 8px; font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); margin: 20px 0 10px; }
+  h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 14px 16px; }
+  .field { position: relative; min-width: 0; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 5px; }
+  .field.dirty label { color: var(--warn); }
+  .field.dirty label::after { content: " ●"; font-size: 12px; vertical-align: 2px; }
+  .field.wide { grid-column: 1 / -1; }
+  textarea.prompt { width: 100%; min-height: 320px; font: 12.5px/1.55 var(--mono); resize: vertical; tab-size: 2; }
+  .field.dirty input, .field.dirty select, .field.dirty textarea { border-color: color-mix(in srgb, var(--warn) 60%, transparent); box-shadow: 0 0 0 3px var(--warn-dim); }
+  .field .help, .field .note { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+  .field .note { color: var(--violet); font-family: var(--mono); font-size: 12px; }
+  .field .note:empty { display: none; }
+
+  /* Dark mode: the one switch that matters most */
+  #dark { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 18px; align-items: center; position: relative; overflow: hidden; }
+  #dark.on { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 8%, transparent), var(--surface) 45%); }
+  #dark .state { font: 600 13px var(--mono); letter-spacing: .06em; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  #dark .state.on { color: var(--accent); }
+  #dark .why { color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { #dark { grid-template-columns: 1fr; } }
+  /* Darstellung: the theme of this browser; light or dark comes from the switch in the app bar */
+  .looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; border: 0; padding: 0; }
+  .looks legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .look { position: relative; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); cursor: pointer; }
+  .look:hover { border-color: var(--line-3); }
+  .look:has(input:checked) { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+  .look:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .look input { position: absolute; opacity: 0; pointer-events: none; }
+  .look .swatch { display: grid; grid-template-columns: 1fr 1fr; height: 56px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
+  .look .swatch span { display: flex; align-items: flex-end; gap: 4px; padding: 6px; }
+  .look .swatch i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .look b { font-size: 14px; } .look small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+  .switch { position: relative; width: 46px; height: 24px; border-radius: var(--r-lg); border: 1px solid var(--line-2); background: var(--surface-3); cursor: pointer; padding: 0; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: left .15s, background .15s; }
+  .switch[aria-checked="true"] { background: var(--accent-dim); border-color: var(--accent); }
+  .switch[aria-checked="true"]::after { left: 25px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+  textarea { min-height: 240px; }
+  textarea.small { min-height: 80px; }
+  details { margin-top: 10px; }
+  ul.plain { margin: 4px 0; padding-left: 0; list-style: none; font-size: 13px; }
+  ul.plain li { padding: 5px 0; border-top: 1px solid var(--line); }
+  ul.plain li:first-child { border-top: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .row input { flex: 1 1 260px; width: auto; font-family: var(--mono); }
+
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: color-mix(in srgb, var(--bg-2) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line-2); padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  #status { flex: 1 1 260px; font: 12px var(--mono); color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  #status.dirty { color: var(--warn); }
+  .side > div:has(#toc:empty), #bar:has(#buttons:empty) { display: none; }
+  #buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand"><span class="logo">SF</span><span class="word">SOFTWARE_FACTORY</span></div>
+  <nav class="tabs"><a href="/">Board</a><a href="/machine">Rechner</a><a href="/settings" aria-current="page">Einstellungen</a></nav>
+  <div class="spacer"></div>
+</header>
+<div class="layout">
+  <aside class="side">
+    <div><div class="eyebrow">Geltungsbereich</div><nav id="scopes" aria-label="Geltungsbereich"></nav></div>
+    <div><div class="eyebrow">Abschnitte</div><nav id="toc" aria-label="Abschnitte"></nav></div>
+  </aside>
+  <main>
+    <div class="pagehead"><h1 id="title">Einstellungen</h1></div>
+    <p id="hint">lädt …</p>
+    <div id="msg" role="status"></div>
+    <div id="form"></div>
+  </main>
+</div>
+<div id="bar"><span id="status"></span><span id="buttons"></span></div>
+<datalist id="models"></datalist>
+<datalist id="repolist"></datalist>
+<script>
+const TOKEN = "__TOKEN__";
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const get = (obj, path) => path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
+const put = (obj, path, value) => { let o = obj; path.slice(0, -1).forEach(k => { if (typeof o[k] !== "object" || o[k] === null) o[k] = {}; o = o[k]; }); o[path[path.length - 1]] = value; };
+const drop = (obj, path) => {            // remove a value and every mapping it leaves empty
+  if (!path.length || obj == null) return;
+  if (path.length === 1) { delete obj[path[0]]; return; }
+  const inner = obj[path[0]]; if (typeof inner !== "object" || inner === null) return;
+  drop(inner, path.slice(1)); if (!Object.keys(inner).length) delete obj[path[0]];
+};
+
+let G = null, scope = "global", P = {}, edits = new Map(), fields = [];
+
+const MODE = [["advisory", "berät nur"], ["gate", "blockiert"], ["off", "aus"]];
+const ONOFF = [[true, "an"], [false, "aus"]];
+const EFFORT = ["low", "medium", "high", "xhigh", "max"].map(v => [v, v]);
+const ROLE = { intake: "Eingang", planner: "Planer", plan_check: "Plan-Prüfung", implementer: "Implementierer",
+               checks: "Checks: Triage der Logs", reviewer: "Review", judge: "Richter", escalation: "Eskalation: Nacharbeit mit stärkerem Modell",
+               cartographer: "Kartograf: Grundriss des Projekts", scenario_writer: "Szenarien-Schreiber", backlog: "Backlog-Planer" };
+const DARK = [[["pipeline", "modes", "plan_check"], "gate", "advisory"], [["pipeline", "modes", "review"], "gate", "advisory"],
+              [["pipeline", "modes", "judge"], "gate", "advisory"], [["delivery", "auto_merge"], true, false]];
+
+// Darstellung: the theme of this browser. Each theme has a light and a dark side; which one shows is the
+// Auto / Hell / Dunkel switch in the app bar. Applies at once and stays in this browser, nothing is saved to the repo.
+const LOOKS = {
+  standard: { text: "Konsole in Blau-Schwarz mit Cyan für laufende Arbeit; hell in Weiß und Petrol.",
+    dark: ["#111620", "#22d3ee", "#fbbf24"], light: ["#ffffff", "#0e7490", "#b45309"] },
+  night: { text: "Leitstand in Schwarz mit Haarlinien und eckigen Formen. Weiß bzw. Schwarz heißt läuft, Bernstein heißt braucht dich.",
+    dark: ["#121214", "#ececef", "#ffb020"], light: ["#ffffff", "#111113", "#ffb020"] },
+};
+function looks() {
+  const box = el("section", "box"); box.id = "look";
+  box.append(el("h2", null, "Darstellung"),
+    el("p", null, "Das Theme dieses Browsers. Jedes Theme hat eine helle und eine dunkle Seite; welche du siehst, wählst du oben rechts mit Auto, Hell oder Dunkel. Gilt sofort und nur in diesem Browser."));
+  const set = el("fieldset", "looks"); set.append(el("legend", null, "Theme"));
+  for (const [id, name] of Object.entries(window.sfTheme.styles)) {
+    const info = LOOKS[id] || { text: "", dark: [], light: [] };
+    const label = el("label", "look"), input = el("input");
+    input.type = "radio"; input.name = "look"; input.value = id; input.checked = window.sfTheme.style() === id;
+    input.onchange = () => window.sfTheme.setStyle(id);
+    const sw = el("span", "swatch"); sw.setAttribute("aria-hidden", "true");
+    for (const side of [info.dark, info.light]) {
+      const half = el("span"); half.style.background = side[0] || "transparent";
+      for (const c of side.slice(1)) { const dot = el("i"); dot.style.background = c; half.append(dot); }
+      sw.append(half);
+    }
+    label.append(input, sw, el("b", null, name), el("small", null, info.text));
+    set.append(label);
+  }
+  box.append(set);
+  return box;
+}
+
+function sections() {
+  const e = G.effective, out = [];
+  out.push({ title: "Ablauf", help: "Wie streng die prüfenden Stationen sind und wie oft nachgearbeitet wird. „berät nur“ heißt: Die Station läuft und berichtet, hält aber nichts auf. „blockiert“ schickt die Arbeit zurück.", fields: [
+    { path: ["pipeline", "modes", "plan_check"], label: "Plan-Prüfung", type: "select", options: MODE },
+    { path: ["pipeline", "modes", "review"], label: "Review", type: "select", options: MODE },
+    { path: ["pipeline", "modes", "judge"], label: "Richter", type: "select", options: MODE },
+    { path: ["pipeline", "parallel_tasks"], label: "Arbeiter gleichzeitig je Ticket", type: "number", min: 1, max: 8, step: 1, help: "Unabhängige Tasks laufen gleichzeitig, jeder in einem eigenen Ordner. 1: alle nacheinander." },
+    { path: ["pipeline", "max_plan_rounds"], label: "Planungsrunden höchstens", type: "number", min: 1, step: 1 },
+    { path: ["pipeline", "max_rework_rounds"], label: "Nacharbeitsrunden höchstens", type: "number", min: 0, step: 1 },
+    { path: ["pipeline", "escalate_after"], label: "Stärkeres Modell ab Nacharbeitsrunde", type: "number", min: 0, step: 1, help: "Ab dann übernimmt das Modell der Rolle Eskalation." },
+    { path: ["pipeline", "max_judge_rounds"], label: "Richter-Runden höchstens", type: "number", min: 1, step: 1, help: "Danach hält das Ticket an und wartet auf dich." },
+    { path: ["pipeline", "advisory_judge_rounds"], label: "Beratender Richter: automatische Nachbesserungen", type: "number", min: 0, step: 1, help: "Findet ein beratender Richter Fehlerbilder, bessert die Factory so viele Runden selbst nach, bevor der Pull Request kommt. 0: der PR kommt sofort, Nachbessern dann per Knopf." },
+    { path: ["pipeline", "human_plan_approval_above", "tasks"], label: "Plan-Freigabe durch dich ab mehr als … Tasks", type: "number", min: 0, step: 1 },
+    { path: ["pipeline", "promote_after", "agreement"], label: "Reif zum Blockieren ab Übereinstimmung", type: "number", min: 0, max: 1, step: 0.05, help: "Nur für den Bericht: Anteil, zu dem eine beratende Station recht behielt." },
+    { path: ["pipeline", "promote_after", "tickets"], label: "… und nach so vielen Tickets", type: "number", min: 1, step: 1 },
+  ] });
+  out.push({ title: "Auslieferung", help: "Ob ein Ticket ohne dich gemergt wird, und unter welchen Regeln. Ist eine Regel nicht erfüllt, bleibt der Pull Request offen und wartet auf dich.", fields: [
+    { path: ["delivery", "auto_merge"], label: "Automatisch mergen", type: "select", options: ONOFF },
+    { path: ["delivery", "auto_merge_rules", "method"], label: "Art des Merges", type: "select", options: [["squash", "squash"], ["merge", "merge"], ["rebase", "rebase"]] },
+    { path: ["delivery", "auto_merge_rules", "max_changed_lines"], label: "Höchstens geänderte Zeilen", type: "number", min: 1, step: 1, help: "Größere Änderungen bleiben bei dir." },
+    { path: ["delivery", "auto_merge_rules", "min_scenarios"], label: "Mindestens Szenarien beim Richter", type: "number", min: 0, step: 1 },
+    { path: ["delivery", "auto_merge_rules", "allow_sensitive"], label: "Sensible Tickets automatisch mergen", type: "select", options: ONOFF },
+    { path: ["delivery", "closing_summary"], label: "Abschlussbericht ins Issue", type: "select", options: ONOFF, help: "Nach dem Merge: Auftrag, Umsetzung, Nachweise (Checks, Review, Richter, CI), Bild-Belege und Aufwand als Kommentar im Issue." },
+    { path: ["delivery", "branch_prefix"], label: "Präfix der Ticket-Branches", type: "text" },
+  ] });
+  out.push({ title: "Backlog-Planer", help: "Hat die Factory nichts zu tun, schlägt ein Agent aus den Design-Dokumenten des Projekts die nächsten Tickets vor.", fields: [
+    { path: ["backlog", "enabled"], label: "Backlog-Planer", type: "select", options: ONOFF },
+    { path: ["backlog", "mode"], label: "Was mit Vorschlägen passiert", type: "select", options: [["manual", "erst dir zeigen (manuell)"], ["auto", "sofort starten (automatisch)"]], help: "Manuell: Jeder Vorschlag steht auf dem Board unter „Braucht dich“; du startest oder verwirfst ihn. Automatisch: Vorschläge laufen sofort los." },
+    { path: ["backlog", "every_hours"], label: "Höchstens alle … Stunden", type: "number", min: 1, step: 1 },
+    { path: ["backlog", "max_proposals"], label: "Vorschläge je Runde höchstens", type: "number", min: 1, step: 1 },
+    { path: ["backlog", "sources"], label: "Quellen (Dateien, Ordner)", type: "list", help: "Woraus der Planer liest, relativ zum Projekt." },
+  ] });
+  out.push({ title: "Prüfung und Grenzen", fields: [
+    { path: ["verify", "satisfaction_threshold"], label: "Richter besteht ab Anteil erfüllter Szenarien", type: "number", min: 0, max: 1, step: 0.05 },
+    { path: ["evidence", "enabled"], label: "Bild-Belege sammeln", type: "select", options: ONOFF, help: "Screenshots der Agents, Bilder aus dem Diff und die des Aufnahme-Befehls im Projektprofil (evidence.capture) landen verkleinert auf dem State-Branch, im Board und im Pull Request." },
+    { path: ["evidence", "max_images"], label: "Bilder je Runde höchstens", type: "number", min: 1, max: 40, step: 1 },
+    { path: ["evidence", "max_px"], label: "Längste Bildseite (px)", type: "number", min: 320, max: 4096, step: 1 },
+    { path: ["evidence", "reviewer_sees"], label: "Reviewer schaut die Bilder an", type: "select", options: ONOFF, help: "Er prüft, ob die Bilder zeigen, was das Ticket verlangt. Kostet je Bild etwa 1.500 Tokens." },
+    { path: ["evidence", "judge_sees"], label: "Richter schaut die Bilder an", type: "select", options: ONOFF },
+    { path: ["map", "enabled"], label: "Grundriss des Projekts", type: "select", options: ONOFF, help: "Der Kartograf zeichnet mit floorplan eine Karte des Basis-Branches und hält sie nach Merges aktuell. Jedes Ticket zeigt dann im Pull Request, im Abschlussbericht und im Board, welche Teile es berührt hat. Braucht Node 18+ auf dem Runner." },
+    { path: ["map", "max_parts"], label: "Teile im Diagramm höchstens", type: "number", min: 1, max: 60, step: 1 },
+    { path: ["verify", "limits", "max_changed_lines"], label: "Größenlimit einer Änderung (Zeilen)", type: "number", min: 1, step: 1, help: "Darüber steht ein Hinweis im Ticket. Leer: kein Limit." },
+    { path: ["limits", "budget_usd_per_ticket"], label: "Budget je Ticket ($)", type: "number", min: 0, step: 0.5, help: "Schätzung nach Listenpreis. Ist es aufgebraucht, hält das Ticket an." },
+    { path: ["limits", "protected_paths"], label: "Geschützte Pfade", type: "list", help: "Änderungen der Agents an diesen Pfaden werden verworfen. Mehrere mit Komma trennen." },
+  ] });
+  out.push({ title: "Stationen", help: "Harness, Modell, Denkaufwand, Budget und Zeitlimit je Station. Das Ersatzmodell springt ein, wenn das erste ablehnt oder ausfällt. Skills sind für die Station verbindlich.", groups:
+    Object.keys(e.roles).map(name => ({ title: ROLE[name] || name, fields: name === "escalation" ? [
+      { path: ["roles", name, "model"], label: "Modell", type: "text", list: "models" },
+      { path: ["roles", name, "effort"], label: "Effort", type: "select", options: EFFORT },
+    ] : [
+      { path: ["roles", name, "harness"], label: "Harness", type: "select", options: [[null, "wie Standard (Laufzeit)"], ...G.harnesses] },
+      { path: ["roles", name, "model"], label: "Modell", type: "text", list: "models" },
+      { path: ["roles", name, "effort"], label: "Effort", type: "select", options: EFFORT },
+      { path: ["roles", name, "budget_usd"], label: "Budget je Lauf ($)", type: "number", min: 0, step: 0.1 },
+      { path: ["roles", name, "timeout_minutes"], label: "Zeitlimit (Minuten)", type: "number", min: 1, step: 1 },
+      { path: ["roles", name, "fallback"], label: "Ersatzmodell", type: "text", list: "models", optional: true },
+      { path: ["roles", name, "skills"], label: "Skills", type: "list" },
+      ...(name === "reviewer" ? [{ path: ["roles", name, "sensitive_skills"], label: "Skills bei sensiblen Tickets", type: "list" }] : []),
+    ] })) });
+  // Every station's prompt, editable. Shown is the text in force; a field set back to the file's text is no override.
+  const prompted = Object.keys(e.roles).filter(name => e.roles[name].prompt);
+  out.push({ id: "prompts", title: "Prompts", help: "Was jede Station als Anweisung bekommt. Platzhalter wie {{ticket_path}} setzt die Station beim Lauf ein; erlaubt sind nur die, die schon im Original stehen. „zurücksetzen“ holt den Text aus der Datei im Repo der Factory zurück.", groups: [
+    ...prompted.map(name => ({ title: ROLE[name] || name, fields: ["prompt", "rework_prompt"].filter(k => e.roles[name][k]).map(k => ({
+      path: ["prompts", e.roles[name][k]], label: (k === "rework_prompt" ? "Nacharbeit · " : "") + e.roles[name][k], type: "longtext", wide: true })) })),
+    { title: "Gemeinsamer Teil aller Stationen", fields: [{ path: ["prompts", "stations/_common.md"], label: "stations/_common.md", type: "longtext", wide: true,
+      help: "Steht unter dem Prompt jeder Station." }] },
+  ] });
+  const caps = Object.keys(e.runtime.capabilities).map(c => [c, c]);
+  out.push({ title: "Laufzeit", help: "Auf welchem Runner die Jobs laufen. Ein Job nennt eine Fähigkeit; die Fähigkeit sagt, wo sie läuft. Neue Fähigkeiten legst du unter „Erweitert“ an.", fields: [
+    { path: ["runtime", "jobs", "work"], label: "Arbeits-Job (Planen, Umsetzen, Prüfen)", type: "select", options: caps },
+    { path: ["runtime", "jobs", "judge"], label: "Richter-Job", type: "select", options: caps },
+    { path: ["agent", "harness"], label: "Harness (Agent-CLI)", type: "select", options: G.harnesses, help: "In welchem Agent-Programm die Stationen laufen. Eine Rolle kann abweichen." },
+    { path: ["agent", "version"], label: "Version des Agent-CLI auf dem Runner", type: "text", help: "latest oder eine feste Version." },
+    { path: ["agent", "rtk"], label: "RTK (Rust Token Killer)", type: "select", options: ONOFF, help: "Kürzt, was Shell-Befehle der Agents ausgeben (Tests, ls, grep, cat …), bevor es ins Kontextfenster kommt: gleiche Befehle, weniger Tokens. Wirkt nur auf Runnern, auf denen rtk installiert ist; sonst laufen die Agents wie bisher." },
+  ], groups: Object.keys(e.runtime.capabilities).map(c => ({ title: "Fähigkeit " + c, fields: [
+    { path: ["runtime", "capabilities", c, "provider"], label: "Anbieter", type: "select", options: [["github-hosted", "GitHub-Runner (frische VM)"], ["self-hosted", "eigener Runner"]] },
+    { path: ["runtime", "capabilities", c, "runs_on"], label: "runs-on (Labels des Runners)", type: "list" },
+  ] })) });
+  out.push({ title: "Skill-Packs", help: "Plugins, aus denen die Stationen ihre Skills beziehen, festgenagelt auf einen Commit.", groups:
+    Object.keys(e.plugins || {}).map(name => ({ title: name, fields: [
+      { path: ["plugins", name, "enabled"], label: "Eingeschaltet", type: "select", options: ONOFF },
+      { path: ["plugins", name, "repo"], label: "Repo (owner/name)", type: "text" },
+      { path: ["plugins", name, "ref"], label: "Commit (40 Zeichen)", type: "text" },
+    ] })) });
+  if (scope === "global") out.push({ id: "rechner", title: "Rechner", help: "Wann die Seite „Rechner“ warnt.", fields: [
+    { path: ["machine", "warn_load"], label: "Warnen ab Prozessen je Kern", type: "number", min: 0.1, step: 0.1, help: "So viele Prozesse je Kern dürfen gleichzeitig rechnen wollen, bevor die Seite warnt." },
+    { path: ["machine", "warn_swap_gb"], label: "Warnen ab ausgelagertem Speicher (GB)", type: "number", min: 0, step: 0.5, help: "Ausgelagert heißt: Der Arbeitsspeicher ist voll, der Rest liegt auf der Platte und bremst." },
+    { path: ["machine", "orphan_minutes"], label: "Verwaist nach (min)", type: "number", min: 0, step: 1, help: "Ein schwerer Prozess oder Agent, der so lange ohne seinen Job läuft." },
+  ] });
+  if (scope === "global") out.push({ title: "Board", help: "Port und Projekte gelten nach einem Neustart des Boards, die Anzeige sofort.", fields: [
+    { path: ["board", "show_cost"], label: "Kosten in Dollar zeigen", type: "select", options: ONOFF, help: "Aus: Das Board zeigt Tokens. An: geschätzte Kosten nach Listenpreis, wie bei Nutzung über die API." },
+    { path: ["board", "port"], label: "Port", type: "number", min: 1024, max: 65535, step: 1 },
+    { path: ["board", "repos"], label: "Projekte auf GitHub (owner/name)", type: "list" },
+    { path: ["board", "local"], label: "Ordner lokaler Läufe", type: "list" },
+  ] });
+  return out;
+}
+
+// What a field holds: in "Alle Projekte" the value in force; in a project its override, or undefined for "inherit".
+const key = f => f.path.join("/");
+const base = f => scope === "global" ? get(G.effective, f.path) : get(P[scope].overrides, f.path);
+const inherited = f => scope === "global" ? get(G.defaults, f.path) : get(G.effective, f.path);
+const current = f => edits.has(key(f)) ? edits.get(key(f)) : base(f);
+const inForce = f => { const v = current(f); return v === undefined ? inherited(f) : v; };
+// For all projects, "nothing set" and "empty" are the same thing; in a project, nothing set means inherit.
+const blank = v => v == null || (Array.isArray(v) && !v.length);
+const same = (a, b) => eq(a, b) || (scope === "global" && blank(a) && blank(b));
+const dirty = () => fields.filter(f => edits.has(key(f)) && !same(edits.get(key(f)), base(f)));
+const words = (f, v) => f.type === "longtext" ? (v == null ? "leer" : "der Text aus der Datei") : v == null ? "leer" : Array.isArray(v) ? (v.join(", ") || "leer")
+  : f.options ? (f.options.find(o => eq(o[0], v)) || [0, String(v)])[1] : String(v);
+const toInput = (f, v) => f.options ? (v === undefined ? (scope === "global" ? "null" : "") : JSON.stringify(v)) : f.type === "list" ? (v || []).join(", ") : v == null ? "" : String(v);
+function fromInput(f, text) {
+  const none = scope === "global" ? (f.type === "list" ? [] : null) : undefined;
+  if (f.options) return text === "" ? undefined : JSON.parse(text);
+  if (f.type === "list") { const items = text.split(/[,\n]/).map(s => s.trim()).filter(Boolean); return items.length ? items : none; }
+  if (text.trim() === "") return none;
+  if (f.type === "longtext") return text;
+  return f.type === "number" ? Number(text) : text.trim();
+}
+function change(f, value) { same(value, base(f)) ? edits.delete(key(f)) : edits.set(key(f), value); sync(); }
+
+function field(f) {
+  const box = el("div", "field" + (f.wide ? " wide" : "")), id = "f-" + key(f).replace(/[^a-z0-9]+/gi, "-");
+  const label = el("label", null, f.label); label.htmlFor = id; box.append(label);
+  let input;
+  if (f.options) {
+    input = el("select");
+    if (scope !== "global") { const o = el("option", null, "übernimmt: " + words(f, inherited(f))); o.value = ""; input.append(o); }
+    for (const [value, text] of f.options) { const o = el("option", null, text); o.value = JSON.stringify(value); input.append(o); }
+  } else if (f.type === "longtext") {
+    input = el("textarea", "prompt"); input.rows = 16; input.spellcheck = false; input.autocomplete = "off";
+    if (scope !== "global") input.placeholder = "übernimmt den Prompt für alle Projekte";
+  } else {
+    input = el("input"); input.type = f.type === "number" ? "number" : "text"; input.autocomplete = "off"; input.spellcheck = false;
+    if (f.type === "number") { input.step = f.step || "any"; if (f.min != null) input.min = f.min; if (f.max != null) input.max = f.max; }
+    if (f.list) input.setAttribute("list", f.list);
+    if (scope !== "global") input.placeholder = "übernimmt: " + words(f, inherited(f));
+  }
+  input.id = id;
+  // One event per kind of field: a second one on blur would redraw the buttons under the click that caused the blur.
+  input[f.options ? "onchange" : "oninput"] = () => change(f, fromInput(f, input.value));
+  box.append(input);
+  if (f.help) box.append(el("div", "help", f.help));
+  const note = el("div", "note"); box.append(note);
+  f.refresh = () => {
+    const v = current(f);
+    if (document.activeElement !== input) input.value = toInput(f, v);
+    box.classList.toggle("dirty", edits.has(key(f)));
+    note.replaceChildren();
+    const differs = scope === "global" ? !same(v, inherited(f)) : v !== undefined;
+    if (!differs) return;
+    note.append(scope === "global" ? "Standard: " + words(f, inherited(f)) + " · " : "überschreibt " + words(f, inherited(f)) + " · ");
+    const back = el("button", "linkbtn", scope === "global" ? "zurücksetzen" : "wieder übernehmen"); back.type = "button";
+    back.onclick = () => change(f, scope === "global" ? inherited(f) : undefined);
+    note.append(back);
+  };
+  fields.push(f);
+  return box;
+}
+
+function grid(list) { const g = el("div", "grid"); list.forEach(f => g.append(field(f))); return g; }
+
+function render() {
+  const form = document.getElementById("form"); form.replaceChildren(); fields = [];
+  const models = document.getElementById("models"); models.replaceChildren();
+  G.models.forEach(m => { const o = el("option"); o.value = m; models.append(o); });
+
+  const nav = document.getElementById("scopes"); nav.replaceChildren();
+  for (const [id, text] of [["global", "Alle Projekte"], ...G.repos.map(r => [r, r.split("/")[1]])]) {
+    const b = el("button", null, text); b.type = "button"; b.setAttribute("aria-pressed", String(scope === id)); b.title = id === "global" ? "" : id;
+    b.onclick = () => choose(id); nav.append(b);
+  }
+  const add = el("button", "add", "Projekt verbinden"); add.type = "button"; add.setAttribute("aria-pressed", String(scope === CONNECT));
+  add.onclick = () => choose(CONNECT); nav.append(add);
+  const title = document.getElementById("title"); title.replaceChildren(scope === CONNECT ? "Projekt verbinden" : "Einstellungen");
+  if (scope !== CONNECT) title.append(el("span", "scope", scope === "global" ? "alle Projekte" : scope));
+  const toc = document.getElementById("toc"); toc.replaceChildren();
+  const anchor = (id, text) => { const a = el("a", null, text); a.href = "#" + id; toc.append(a); };
+  if (scope === CONNECT) {
+    document.getElementById("hint").textContent = "Verbindet ein GitHub-Repo mit der Factory: Labels, das Recht für Actions, Pull Requests zu öffnen, und Profil, Workflow und Ticket-Vorlage als Pull Request, den du mergst. Auf einem Branch, an dem gearbeitet wird, ändert die Factory dabei nichts direkt.";
+    document.getElementById("status").textContent = ""; document.getElementById("buttons").replaceChildren();
+    return connectView();
+  }
+  document.getElementById("hint").textContent = scope === "global"
+    ? "Gilt für alle Projekte. Gespeichert wird in settings.yaml im Repo der Factory; factory.yaml bleibt unverändert und liefert die Standardwerte. Die Läufe auf GitHub lesen den Stand von main, deshalb gehört das Veröffentlichen dazu."
+    : `Gilt nur für ${scope} und überschreibt die Werte für alle Projekte. Gespeichert wird als Commit im Abschnitt overrides von .factory/profile.yaml auf ${(P[scope] && P[scope].branch) || "dem Basis-Branch"}, wo die Factory es liest; ist der Branch geschützt, als Pull Request. Leere Felder übernehmen den Wert für alle Projekte.`;
+
+  const dark = el("section", "box"); dark.id = "dark"; form.append(dark); anchor("dark", "Dark-Modus");
+  if (scope === "global" && window.sfTheme) { form.append(looks()); anchor("look", "Darstellung"); }
+  if (scope !== "global") { const pr = project(P[scope]); pr.id = "s-project"; form.append(pr); anchor(pr.id, "Projekt"); }
+  sections().forEach((s, i) => {
+    const box = el("section", "box"); box.id = s.id || "s-" + i; box.append(el("h2", null, s.title)); if (s.help) box.append(el("p", null, s.help));
+    if (s.fields) box.append(grid(s.fields));
+    for (const g of s.groups || []) { box.append(el("h3", null, g.title), grid(g.fields)); }
+    form.append(box); anchor(box.id, s.title);
+  });
+  if (scope === "global") { const adv = advanced(); adv.id = "s-advanced"; form.append(adv); anchor(adv.id, "Erweitert"); }
+  sync();
+  const asked = location.hash.length > 1 && document.getElementById(location.hash.slice(1));   // e.g. /settings#rechner from the machine page
+  if (asked && asked.tagName === "SECTION") asked.scrollIntoView();
+}
+
+function project(p) {
+  const box = el("section", "box"); box.append(el("h2", null, "Projekt " + (p.profile.name || p.repo)));
+  box.append(el("p", null, (p.profile.description ? p.profile.description + " " : "") + "Checks, Setup und Szenarien-Repo stehen im Profil des Projekts und werden dort geändert; hier nur zur Ansicht."));
+  const ul = el("ul", "plain");
+  for (const c of p.profile.checks) { const li = el("li"); li.append("Check " + c.name + ": ", el("code", null, c.run)); ul.append(li); }
+  if (p.profile.setup) { const li = el("li"); li.append("Setup: ", el("code", null, p.profile.setup)); ul.append(li); }
+  ul.append(el("li", null, "Szenarien-Repo: " + (p.profile.scenarios_repo || "keins, der Richter urteilt dann nicht")));
+  box.append(ul, el("h3", null, "Zugänge"));
+  if (!p.secrets) box.append(el("div", "muted", "Konnte die Zugänge nicht lesen."));
+  else {
+    const list = el("ul", "plain");
+    for (const s of p.secrets) {
+      const li = el("li"); li.append(el("span", s.set ? "ok" : "bad", s.set ? "✓ gesetzt" : "✗ fehlt"), " ", el("code", null, s.name), " · " + s.purpose
+        + (s.updated ? " · geändert am " + new Date(s.updated).toLocaleDateString("de-DE") : ""));
+      list.append(li);
+    }
+    box.append(list);
+    const how = el("div", "muted"); how.append("Zugänge trägst du selbst ein, die Seite zeigt nur, ob sie da sind: ", el("code", null, `gh secret set NAME --repo ${p.repo}`));
+    box.append(how);
+  }
+  return box;
+}
+
+function advanced() {
+  const box = el("section", "box"); box.append(el("h2", null, "Erweitert"));
+  box.append(el("p", null, "Alles, wofür es oben kein Feld gibt: settings.yaml direkt. Dieselben Schlüssel wie in factory.yaml; angegeben wird nur, was abweichen soll. Die Datei wird vor dem Speichern geprüft."));
+  const d = el("details"); d.append(el("summary", null, "settings.yaml bearbeiten"));
+  const area = el("textarea"); area.value = G.raw; area.spellcheck = false; area.setAttribute("aria-label", "settings.yaml");
+  const row = el("div"); row.style.marginTop = "8px"; row.style.display = "flex"; row.style.gap = "8px"; row.style.flexWrap = "wrap";
+  const local = el("button", "act", "Nur lokal speichern"); local.type = "button"; local.onclick = () => saveGlobal({ raw: area.value, publish: false });
+  row.append(local);
+  if (G.git.available) { const pub = el("button", "act primary", "Speichern und veröffentlichen"); pub.type = "button"; pub.onclick = () => saveGlobal({ raw: area.value, publish: true }); row.append(pub); }
+  d.append(area, row); box.append(d);
+  const all = el("details"); all.append(el("summary", null, "Wirksame Konfiguration ansehen (factory.yaml und settings.yaml zusammen)"), el("pre", null, G.effective_yaml));
+  box.append(all);
+  return box;
+}
+
+function sync() {
+  fields.forEach(f => f.refresh());
+  // Dark mode: the three gates block and merging is automatic.
+  const dark = document.getElementById("dark"); dark.replaceChildren();
+  const byPath = p => fields.find(f => eq(f.path, p));
+  const on = DARK.every(([p, want]) => eq(inForce(byPath(p)), want));
+  dark.classList.toggle("on", on);
+  const state = el("span", "state" + (on ? " on" : "")); state.append(el("span", "led" + (on ? " on" : "")), on ? "DARK-MODUS: AN" : "DARK-MODUS: AUS");
+  dark.append(state);
+  dark.append(el("span", "why", on ? "Plan-Prüfung, Review und Richter blockieren, und ein Ticket wird ohne dich gemergt, wenn alle Regeln der Auslieferung erfüllt sind."
+    : "Mindestens eine prüfende Station berät nur, oder das automatische Mergen ist aus. Fertige Tickets warten als Pull Request auf dich."));
+  const flip = el("button", "switch"); flip.type = "button"; flip.setAttribute("role", "switch"); flip.setAttribute("aria-checked", String(on));
+  flip.setAttribute("aria-label", on ? "Dark ausschalten" : "Dark einschalten"); flip.title = flip.getAttribute("aria-label");
+  flip.onclick = () => { DARK.forEach(([p, yes, no]) => { const f = byPath(p), v = on ? no : yes; same(v, base(f)) ? edits.delete(key(f)) : edits.set(key(f), v); }); sync(); };
+  dark.append(flip);
+
+  const n = dirty().length, status = document.getElementById("status"), buttons = document.getElementById("buttons"); buttons.replaceChildren();
+  const g = G.git, where = scope !== "global" ? "" : !g.available ? "" : g.unsaved || g.ahead ? "settings.yaml ist lokal weiter als GitHub · " : "settings.yaml auf GitHub veröffentlicht · ";
+  status.replaceChildren(el("span", "led" + (n ? " warn" : g.available && scope === "global" && (g.unsaved || g.ahead) ? " warn" : " ok")),
+    where + (n ? `${n} ungespeicherte Änderung${n > 1 ? "en" : ""}` : "keine ungespeicherten Änderungen"));
+  status.classList.toggle("dirty", n > 0);
+  const btn = (text, cls, fn, enabled) => { const b = el("button", "act" + cls, text); b.type = "button"; b.disabled = !enabled; b.onclick = fn; buttons.append(b); };
+  btn("Verwerfen", "", () => { edits.clear(); sync(); }, n > 0);
+  if (scope === "global") {
+    btn("Nur lokal speichern", g.available ? "" : " primary", () => saveGlobal({ values: collect(), publish: false }), n > 0);
+    if (g.available) btn("Speichern und veröffentlichen", " primary", () => saveGlobal({ values: collect(), publish: true }), n > 0 || g.unsaved || g.ahead > 0);
+  } else btn("Im Projekt speichern", " primary", saveProject, n > 0);
+}
+
+function collect() { const values = {}; dirty().forEach(f => put(values, f.path, edits.get(key(f)))); return values; }
+
+function say(text, cls, list) {
+  const box = document.getElementById("msg"); box.replaceChildren(); if (!text) return;
+  box.append(el("div", cls, text));
+  if (list && list.length) { const ul = el("ul", cls); list.forEach(i => ul.append(el("li", null, i))); box.append(ul); }
+  box.scrollIntoView({ block: "nearest" });
+}
+
+async function api(path, body) {
+  const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json", "X-Factory-Token": TOKEN }, body: JSON.stringify(body) } : {});
+  if (!res.ok) throw new Error(res.status === 403 ? "Die Seite ist veraltet (das Board wurde neu gestartet). Bitte neu laden." : "Antwort " + res.status);
+  return res.json();
+}
+
+async function saveGlobal(body) {
+  say("speichert …", "muted");
+  try {
+    const r = await api("/api/settings", body);
+    if (r.error) return say(r.error, "bad");
+    if (!r.ok) return say("Nicht gespeichert, diese Werte passen nicht:", "bad", r.problems);
+    edits.clear(); G = await api("/api/settings"); render();
+    say(r.message || "Lokal gespeichert. Lokale Läufe nutzen die neuen Werte sofort; für Läufe auf GitHub noch veröffentlichen.", "ok");
+  } catch (e) { say("Speichern fehlgeschlagen: " + e.message, "bad"); }
+}
+
+async function saveProject() {
+  const p = P[scope], overrides = JSON.parse(JSON.stringify(p.overrides));
+  dirty().forEach(f => { const v = edits.get(key(f)); v === undefined ? drop(overrides, f.path) : put(overrides, f.path, v); });
+  say("speichert …", "muted");
+  try {
+    const r = await api("/api/settings/project", { repo: scope, overrides, sha: p.sha });
+    if (r.error) return say(r.error, "bad");
+    if (!r.ok) return say("Nicht gespeichert, diese Werte passen nicht:", "bad", r.problems);
+    edits.clear(); delete P[scope]; await choose(scope, true);
+    say(r.message, "ok");
+    if (r.commit) { const a = el("a", null, /\/pull\//.test(r.commit) ? "Pull Request öffnen ↗" : "Commit ansehen ↗"); a.href = r.commit; a.target = "_blank"; a.rel = "noopener"; document.getElementById("msg").append(a); }
+  } catch (e) { say("Speichern fehlgeschlagen: " + e.message, "bad"); }
+}
+
+async function choose(id, keep) {
+  if (!keep && dirty().length && !confirm("Ungespeicherte Änderungen verwerfen?")) return;
+  edits.clear(); if (!keep) say("");
+  if (id === CONNECT) { scope = id; render(); loadRepos(); return; }
+  if (id !== "global" && !P[id]) {
+    document.getElementById("hint").textContent = "lädt " + id + " …";
+    let failed = "";
+    try {
+      const p = await api("/api/settings/project?repo=" + encodeURIComponent(id));
+      if (p.error) failed = p.error; else P[id] = p;
+    } catch (e) { failed = e.message; }
+    if (failed) {   // no profile to read yet: show how far the connection is instead
+      C = { repo: id, info: null, form: {}, result: null, busy: "" }; scope = CONNECT; render(); loadRepos();
+      return inspectRepo();
+    }
+  }
+  scope = id; render();
+}
+
+// A pull request as a link: "PR #12 ↗", opening GitHub in a new tab.
+function prLink(url) {
+  const n = (String(url).match(/\/pull\/(\d+)/) || [])[1];
+  const a = el("a", null, n ? `PR #${n} ↗` : "Pull Request ↗"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.title = url;
+  return a;
+}
+
+// ---- connect a GitHub repository ------------------------------------------------
+const CONNECT = "+connect";
+let C = { repo: "", info: null, form: {}, result: null, busy: "" }, repoList = null;
+
+async function loadRepos() {
+  if (repoList) return;
+  repoList = [];
+  try { repoList = (await api("/api/connect/repos")).repos || []; } catch (e) { /* the field still takes typed names */ }
+  const list = document.getElementById("repolist"); list.replaceChildren();
+  repoList.forEach(r => { const o = el("option"); o.value = r; list.append(o); });
+}
+
+async function inspectRepo(base) {
+  const repo = C.repo.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").replace(/\/$/, "");
+  if (!repo) return;
+  C.busy = "prüft …"; render();
+  try {
+    const r = await api("/api/connect/inspect?repo=" + encodeURIComponent(repo) + (base ? "&base=" + encodeURIComponent(base) : ""));
+    if (r.error) { C.info = null; say(r.error, "bad"); }
+    else {
+      say("");
+      if (!C.info || C.info.repo !== r.repo) {
+        C.result = null;
+        C.form = { base: r.base, description: r.description, setup: r.suggestion.setup, checks: r.suggestion.checks,
+                   capability: r.suggestion.capability, scenarios_repo: "", trigger_workflows: "" };
+      }
+      C.form.base = r.base; C.info = r; C.repo = r.repo;
+    }
+  } catch (e) { say("Prüfen fehlgeschlagen: " + e.message, "bad"); }
+  C.busy = ""; render();
+}
+
+async function connectRepo() {
+  C.busy = "verbindet …"; render();
+  try {
+    const f = C.form;
+    const r = await api("/api/connect", { repo: C.info.repo, base: f.base, description: f.description, setup: f.setup, checks: f.checks,
+      capability: f.capability, scenarios_repo: f.scenarios_repo,
+      trigger_workflows: (f.trigger_workflows || "").split(/[,\n]/).map(x => x.trim()).filter(Boolean) });
+    if (r.error) say(r.error, "bad");
+    else { say(""); C.result = r.done; C.info = r.after; G = await api("/api/settings"); }
+  } catch (e) { say("Verbinden fehlgeschlagen: " + e.message, "bad"); }
+  C.busy = ""; render();
+}
+
+function connectView() {
+  const form = document.getElementById("form"); form.replaceChildren();
+  const pick = el("section", "box"); pick.append(el("h2", null, "Welches Repo?"));
+  pick.append(el("p", null, "Name als owner/name oder die Adresse von GitHub. Die Liste schlägt deine eigenen Repos vor."));
+  const row = el("div", "row"), input = el("input"); input.value = C.repo; input.placeholder = "owner/name"; input.setAttribute("list", "repolist");
+  input.setAttribute("aria-label", "GitHub-Repo"); input.autocomplete = "off"; input.spellcheck = false;
+  input.oninput = () => { C.repo = input.value; };
+  input.onkeydown = e => { if (e.key === "Enter") inspectRepo(); };
+  const check = el("button", "act primary", "Prüfen"); check.type = "button"; check.disabled = !!C.busy; check.onclick = () => inspectRepo();
+  row.append(input, check); if (C.busy) row.append(el("span", "muted", C.busy)); pick.append(row); form.append(pick);
+  const info = C.info;
+  if (!info) return;
+
+  const open = info.steps.filter(x => !x.ok && !x.manual && !x.pull_request);
+  const needsFiles = open.some(x => x.id === "profile");
+  const state = el("section", "box"); state.append(el("h2", null, info.repo));
+  state.append(el("p", null, [info.private ? "privat" : "öffentlich", "Standard-Branch " + info.default_branch,
+    info.suggestion.kind ? "erkannt: " + info.suggestion.kind : null].filter(Boolean).join(" · ")));
+  const list = el("ul", "plain");
+  for (const x of info.steps) {
+    const li = el("li");
+    const mark = x.ok ? ["ok", "✓"] : x.ok === null ? ["muted", "?"] : x.pull_request ? ["wait", "…"] : ["bad", "✗"];
+    li.append(el("span", mark[0], mark[1] + " "), x.title);
+    if (x.pull_request) { li.append(" · wartet auf deinen Merge: "); li.append(prLink(x.pull_request)); }
+    if (x.ok === null) li.append(" · ließ sich gerade nicht lesen");
+    if (x.manual && x.ok === false) { li.append(" · trägst du selbst ein: ", el("code", null, x.command)); }
+    list.append(li);
+  }
+  state.append(list);
+  if (!info.can_admin) state.append(el("div", "bad", "Dir fehlen in diesem Repo die Rechte eines Besitzers; verbinden kann nur, wer Labels, Einstellungen und Workflows ändern darf."));
+  if (info.steps.find(x => x.id === "board").ok) {
+    const off = el("button", "linkbtn", "aus dem Board nehmen"); off.type = "button";
+    off.onclick = async () => {
+      if (!confirm(`${info.repo} aus dem Board nehmen? Im Repo selbst ändert sich nichts.`)) return;
+      try {
+        const r = await api("/api/connect/remove", { repo: info.repo });
+        if (r.error) return say(r.error, "bad");
+        G = await api("/api/settings"); delete P[info.repo]; await inspectRepo(info.base); say(r.message, "ok");
+      } catch (e) { say("Fehlgeschlagen: " + e.message, "bad"); }
+    };
+    state.append(off);
+  }
+  form.append(state);
+
+  if (C.result) {
+    const res = el("section", "box"); res.append(el("h2", null, "Erledigt"));
+    const ul = el("ul", "plain");
+    for (const d of C.result) {
+      const li = el("li"); li.append(el("span", d.ok ? "ok" : "bad", (d.ok ? "✓ " : "✗ ")), d.title + (d.detail ? " · " + d.detail : ""));
+      if (d.url) { li.append(" · "); li.append(prLink(d.url)); }
+      ul.append(li);
+    }
+    res.append(ul); form.append(res);
+  }
+  if (!info.can_admin) return;
+
+  if (needsFiles) {
+    const f = C.form, box = el("section", "box"); box.append(el("h2", null, "Angaben zum Projekt"));
+    box.append(el("p", null, "Daraus entsteht das Profil des Projekts. Du kannst es später in der Datei oder hier unter dem Projekt ändern."));
+    const grid = el("div", "grid");
+    const add = (label, node, help) => { const w = el("div", "field"); const l = el("label", null, label); node.id = "connect-" + grid.children.length; l.htmlFor = node.id;
+      w.append(l, node); if (help) w.append(el("div", "help", help)); grid.append(w); return node; };
+    const text = (key, placeholder) => { const i = el("input"); i.value = f[key] || ""; i.placeholder = placeholder || ""; i.autocomplete = "off"; i.spellcheck = false; i.oninput = () => { f[key] = i.value; }; return i; };
+    const branch = el("select"); info.branches.forEach(b => { const o = el("option", null, b + (b === info.default_branch ? " (Standard)" : "")); o.value = b; branch.append(o); });
+    branch.value = f.base; branch.onchange = () => inspectRepo(branch.value);
+    add("Ziel-Branch", branch, "Von hier starten Tickets, hierhin gehen die Pull Requests.");
+    const cap = el("select");
+    for (const [name, c] of Object.entries(G.effective.runtime.capabilities)) {
+      const o = el("option", null, `${name}: ${c.provider === "github-hosted" ? "GitHub-Runner, frische VM" : "eigener Runner (" + c.runs_on.join(", ") + ")"}`); o.value = name; cap.append(o);
+    }
+    cap.value = f.capability; cap.onchange = () => { f.capability = cap.value; };
+    add("Runner", cap, "Auf einem eigenen Runner läuft der Agent ohne Sandbox.");
+    add("Beschreibung", text("description", "Ein Satz, was das Projekt ist"));
+    add("Setup (optional)", text("setup", "z. B. npm ci"), "Läuft einmal vor den Checks.");
+    add("Szenarien-Repo (optional)", text("scenarios_repo", "owner/name"), "Für den Richter. Ohne Szenarien gibt es kein Urteil und kein automatisches Mergen.");
+    add("Pflicht-Checks des Projekts (optional)", text("trigger_workflows", "z. B. ci.yml, lint.yml"), "Workflows, die der Branch-Schutz verlangt. Die Factory startet sie am Ticket-Branch.");
+    box.append(grid);
+    const w = el("div", "field"); w.style.marginTop = "10px";
+    const area = el("textarea", "small"); area.value = f.checks || ""; area.spellcheck = false; area.placeholder = "tests: python3 -m pytest -q"; area.oninput = () => { f.checks = area.value; };
+    area.id = "connect-checks"; const l = el("label", null, "Checks: ein Kommando je Zeile, auf Wunsch mit Namen davor"); l.htmlFor = area.id;
+    w.append(l, area); if (info.suggestion.hint) w.append(el("div", "help", info.suggestion.hint));
+    box.append(w); form.append(box);
+  }
+  const act = el("section", "box");
+  if (open.length) {
+    act.append(el("h2", null, "Verbinden"));
+    const separate = x => !(x.id === "workflow" && needsFiles && info.base === info.default_branch);   // then it travels with the profile
+    act.append(el("p", null, "Das passiert: " + open.filter(separate).map(x => x.id === "profile" ? "Profil, Workflow und Ticket-Vorlage als Pull Request"
+      : x.id === "workflow" ? "Workflow als Pull Request auf " + info.default_branch : x.id === "labels" ? "sieben Labels anlegen"
+      : x.id === "permission" ? "Actions erlauben, Pull Requests zu öffnen" : "Projekt ins Board aufnehmen").join("; ") + "."));
+    const go = el("button", "act primary", C.busy || "Verbinden"); go.type = "button"; go.disabled = !!C.busy; go.onclick = connectRepo;
+    act.append(go);
+  } else {
+    act.append(el("h2", null, info.connected ? "Verbunden" : "Fast fertig"));
+    const rest = [];
+    const waitingPrs = info.steps.filter(x => x.pull_request).map(x => x.pull_request);
+    if (waitingPrs.length) rest.push("die offenen Pull Requests mergen (bei zweien zuerst den auf den Ziel-Branch)");
+    if (info.steps.some(x => x.manual && x.ok === false)) rest.push("den Zugang zu Claude als Secret eintragen");
+    act.append(el("p", null, rest.length ? "Es bleibt für dich: " + rest.join(", dann ") + ". Danach startet das Label factory:go an einem Issue ein Ticket."
+      : "Alles ist da. Das Label factory:go an einem Issue startet ein Ticket."));
+    if (waitingPrs.length) { const bar = el("div", "row"); [...new Set(waitingPrs)].forEach(u => { const a = prLink(u); a.className = "btn primary"; bar.append(a); }); act.append(bar); }
+    const again = el("button", "act", "Stand neu prüfen"); again.type = "button"; again.onclick = () => inspectRepo(info.base); act.append(again);
+  }
+  form.append(act);
+}
+
+window.addEventListener("beforeunload", e => { if (dirty().length) e.preventDefault(); });
+(async () => {
+  try {
+    G = await api("/api/settings"); render();
+    if (location.hash === "#verbinden") choose(CONNECT);   // the board links straight here
+    if (G.error) say(G.error, "bad"); else if (G.problems.length) say("Die gespeicherte Konfiguration hat Fehler; so startet kein Lauf:", "bad", G.problems);
+  } catch (e) { document.getElementById("hint").textContent = "Einstellungen nicht erreichbar: " + e.message; }
+})();
+</script>
+</body>
+</html>

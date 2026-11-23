@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "profile/1",
+  "description": ".factory/profile.yaml in a product repository: everything project-specific. Always read from the base branch, never from the ticket branch.",
+  "type": "object",
+  "required": [
+    "schema",
+    "name",
+    "checks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "profile/1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "setup": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "run"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "run": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timeout_minutes": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "agent_commands": {
+      "description": "Programs the implementer and the judge may run when the job is not sandboxed (local runs).",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9._/-]+$"
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number"
+        ]
+      }
+    },
+    "env_passthrough": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "work": {
+          "type": "string"
+        },
+        "judge": {
+          "type": "string"
+        }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scenarios_repo": {
+          "type": "string"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "overrides": {
+      "type": "object"
+    },
+    "warm_dirs": {
+      "description": "Folders git ignores that the project's tools rebuild slowly (Unity's Library). A new ticket worktree starts from a copy-on-write clone of the runner's copy; after green checks the runner keeps the newer state.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^/][^\\0]*$"
+      }
+    },
+    "evidence": {
+      "description": "The project's capture command: it writes pictures of fixed views into $FACTORY_EVIDENCE_OUT. The factory runs it once on the base (before) and after every green round on the ticket branch (after); same file names make a pair.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout_minutes": {
+          "type": "number",
+          "minimum": 1
+        },
+        "before": {
+          "type": "boolean",
+          "description": "Also capture the base, for before/after pairs (default true)."
+        }
+      }
+    }
+  }
+}

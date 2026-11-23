@@ -1,0 +1,32 @@
+# Profil dieses Projekts für die Software Factory.
+# Alles Projektspezifische steht hier; die Factory selbst bleibt unverändert.
+# Gelesen wird immer der Stand des Basis-Branches, nie der des Ticket-Branches.
+schema: profile/1
+name: mein-projekt
+description: Ein Satz, was das Projekt ist.
+
+# Einmal vor den Checks und vor dem Richter (Abhängigkeiten installieren, bauen).
+# setup: "python3 -m pip install -q -r requirements.txt"
+
+# Die schnellen Checks. Schlägt einer fehl, geht der Stand zurück an den Implementierer.
+checks:
+  - name: tests
+    run: "python3 -m unittest discover -s tests -q"
+    timeout_minutes: 5
+
+# Programme, die Implementierer und Richter bei einem lokalen Lauf ohne Sandbox
+# starten dürfen. Auf GitHub-Runnern gilt diese Liste nicht.
+agent_commands: [python3]
+
+# Welche Fähigkeit die Jobs brauchen; wo sie läuft, steht in factory.yaml.
+# runtime: { work: self-hosted, judge: linux }
+
+judge:
+  scenarios_repo: OWNER/mein-projekt-scenarios
+  pattern: "scenarios/**/*.md"
+  notes: "So startet man das Programm: ..."
+
+# Einzelne Werte aus factory.yaml für dieses Projekt überschreiben.
+# overrides:
+#   pipeline: { modes: { review: gate } }
+#   limits: { budget_usd_per_ticket: 10 }

@@ -1,0 +1,13 @@
+# Von der Einstellungsseite geschrieben (python3 -m factory board, dann /settings).
+# Enthält nur, was von factory.yaml abweicht. Gilt für alle Projekte; ein Projekt
+# kann einzelne Werte in seinem Profil überschreiben.
+machine:
+  heavy_processes:
+  - Unity\.app/Contents/MacOS/Unity .*-batchmode
+board:
+  repos:
+  - HanSur94/factory-sandbox
+  - HanSur94/ck3-battle-engine
+  - HanSur94/netloom
+  local:
+  - ~/.cache/software-factory/factory-sandbox/state

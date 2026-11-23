@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "backlog/1",
+  "description": "Written by the backlog planner: tickets it proposes to the owner.",
+  "type": "object",
+  "required": ["schema", "proposals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "backlog/1" },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "why", "mandate", "acceptance"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "why": { "type": "string", "minLength": 1 },
+          "mandate": { "type": "string", "minLength": 1 },
+          "acceptance": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "where": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

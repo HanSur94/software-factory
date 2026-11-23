@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software Factory · Rechner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/theme.css">
+<script src="/theme.js"></script>
+<style>
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 64px; }
+  @media (max-width: 700px) { main { padding: 16px 16px 48px; } }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 14px; }
+  .head h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .head p { margin: 0; color: var(--muted); font-size: 13px; max-width: 760px; }
+  .head .live { display: flex; align-items: center; gap: 10px; font: 12px var(--mono); color: var(--muted); }
+  .head .live button { min-height: 32px; }
+
+  #alerts { display: flex; flex-direction: column; gap: 6px; margin: 0 0 14px; }
+  #alerts:empty { display: none; }
+  .alert { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r); font-size: 13.5px; border: 1px solid transparent; }
+  .alert svg { width: 16px; height: 16px; flex: none; }
+  .alert.bad { background: var(--bad-dim); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+  .alert.warn { background: var(--warn-dim); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+  .alert.info { background: var(--accent-dim); color: var(--accent); }
+  .alert.ok { background: var(--ok-dim); color: var(--ok); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0 0 14px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px 10px; min-width: 0; }
+  .tile .eyebrow { margin: 0 0 6px; }
+  .tile .big { font: 600 22px/1.15 var(--mono); color: var(--text); }
+  .tile .big small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tile .sub { font-size: 12.5px; color: var(--text-2); margin-top: 2px; min-height: 19px; }
+  .tile .sub.bad { color: var(--bad); } .tile .sub.warn { color: var(--warn); }
+  .tile svg.spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
+
+  section.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px 16px; margin: 0 0 14px; }
+  section.box > h2 { display: flex; align-items: center; gap: 10px; font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; margin: 0 0 4px; }
+  section.box > h2 .n { color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  section.box > .explain { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; max-width: 820px; }
+
+  .runner { border-top: 1px solid var(--line); }
+  .runner:first-of-type { border-top: none; }
+  .runner > summary { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(120px, 1fr) minmax(120px, 1fr) 86px 110px; gap: 14px;
+    align-items: center; padding: 10px 2px; min-height: 52px; }
+  .runner > summary::before { display: none; }
+  .runner > summary:hover { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+  .cols { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(120px, 1fr) minmax(120px, 1fr) 86px 110px; gap: 14px; padding: 0 2px 6px;
+    font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .who { min-width: 0; }
+  .who b { font: 600 13px var(--mono); color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .who .job { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .who .job a { color: var(--accent); }
+  .meter { min-width: 0; }
+  .meter .v { font: 500 12.5px var(--mono); color: var(--text); white-space: nowrap; }
+  .meter .v.bad { color: var(--bad); } .meter .v.warn { color: var(--warn); }
+  .bar { height: 6px; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--line); margin-top: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: var(--r-sm); }
+  .bar i.warn { background: var(--warn); } .bar i.bad { background: var(--bad); }
+  .num { font: 500 12.5px var(--mono); color: var(--text-2); text-align: right; white-space: nowrap; }
+  .num.bad { color: var(--bad); }
+  svg.rspark { width: 110px; height: 28px; display: block; }
+  .detail { padding: 2px 2px 12px 18px; display: grid; gap: 8px; }
+  .detail table { border-collapse: collapse; font: 12px var(--mono); width: 100%; max-width: 640px; }
+  .detail td, .detail th { padding: 3px 10px 3px 0; text-align: left; color: var(--text-2); }
+  .detail th { color: var(--muted); font-weight: 500; }
+  .detail td.r, .detail th.r { text-align: right; }
+  .detail .meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  @media (max-width: 820px) {
+    .cols { display: none; }
+    .runner > summary { grid-template-columns: 1fr 1fr; row-gap: 8px; }
+    .runner > summary .who { grid-column: 1 / -1; }
+    .runner > summary .spark-cell { display: none; }
+  }
+
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .chart h3 { font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .chart svg { width: 100%; height: 130px; display: block; cursor: crosshair; }
+  svg.spark, svg.rspark { cursor: crosshair; }
+  .ptip { position: fixed; z-index: 50; pointer-events: none; background: var(--card, var(--bg)); color: var(--text); border: 1px solid var(--line);
+          border-radius: var(--r-lg); padding: 7px 10px; font: 12px/1.5 var(--mono); box-shadow: 0 6px 20px rgba(0,0,0,.14); display: grid; gap: 1px; min-width: 150px; }
+  .ptip[hidden] { display: none; }
+  .ptip b { font-weight: 600; color: var(--muted); }
+  .ptip .row { display: flex; gap: 12px; justify-content: space-between; }
+  .ptip .row .k::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 6px; }
+  .ptip .row .v { font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font: 12px var(--mono); color: var(--text-2); margin-top: 4px; }
+  .legend span::before { content: ""; display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--c); margin-right: 6px; vertical-align: middle; }
+  .legend span.dash::before { border-top-style: dashed; }
+
+  .list { display: flex; flex-direction: column; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .item:first-child { border-top: none; }
+  .item .what { flex: 1; min-width: 220px; }
+  .item .what b { font: 600 13px var(--mono); }
+  .item .what .meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .empty { color: var(--muted); font-size: 13px; padding: 4px 0; }
+  button.kill { min-height: 40px; color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line-2)); background: transparent; }
+  button.kill:hover { border-color: var(--bad); background: var(--bad-dim); }
+
+  #killdlg { width: min(480px, calc(100vw - 32px)); padding: 20px 22px; border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    background: var(--surface); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, .45); }
+  #killdlg::backdrop { background: rgba(0, 0, 0, .55); }
+  #killdlg h2 { margin: 0 0 6px; font: 600 17px var(--sans); }
+  #killdlg p { margin: 0 0 12px; font-size: 13.5px; color: var(--text-2); overflow-wrap: anywhere; }
+  #killdlg .note:empty { display: none; }
+  #killdlg .note.bad { color: var(--bad); }
+  #killdlg .buttons { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+  #killdlg button { min-height: 40px; padding: 0 16px; font-weight: 600; }
+  #killdlg button.stop { background: var(--bad); border-color: var(--bad); color: var(--bg); }
+  #killdlg button.stop:focus-visible { outline-color: var(--bad); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand"><span class="logo">SF</span><span class="word">SOFTWARE_FACTORY</span></div>
+  <nav class="tabs"><a href="/">Board</a><a href="/machine" aria-current="page">Rechner</a><a href="/settings">Einstellungen</a></nav>
+  <div class="spacer"></div>
+  <div class="status" id="meta">lädt …</div>
+</header>
+<main>
+  <div class="head">
+    <div>
+      <h1>Rechner</h1>
+      <p>Was dieser Rechner für die Factory leistet und welcher Runner wie viel davon braucht. Speicher heißt hier, was das System einem Prozess anrechnet, wie in der Aktivitätsanzeige.</p>
+    </div>
+    <div class="live"><span id="tick">–</span><button type="button" class="btn" id="pause" aria-pressed="false">Anhalten</button></div>
+  </div>
+  <div id="alerts" role="status" aria-live="polite"></div>
+  <div class="tiles" id="tiles"></div>
+  <section class="box" aria-labelledby="h-runners">
+    <h2 id="h-runners">Runner <span class="n" id="n-runners"></span></h2>
+    <p class="explain">Je Runner der Job, den er gerade fährt, und alles, was dieser Job gestartet hat. CPU-Last in Prozent des ganzen Rechners, Platte laut du (geklonte Ordner zählen doppelt). Zeile öffnen für die größten Prozesse.</p>
+    <div class="cols" aria-hidden="true"><span>Runner · Job</span><span>CPU-Last</span><span>Speicher</span><span style="text-align:right">Platte</span><span>60 min CPU</span></div>
+    <div id="runners"></div>
+  </section>
+  <section class="box" aria-labelledby="h-orphans">
+    <h2 id="h-orphans">Verwaiste Prozesse <span class="n" id="n-orphans"></span></h2>
+    <p class="explain">Schwere Prozesse und Agents im Ordner eines Runners, die zu keinem laufenden Job mehr gehören, etwa ein Editor oder eine Engine, deren Skript schon endete. Sie halten Speicher fest.</p>
+    <div class="list" id="orphans"></div>
+  </section>
+  <section class="box" aria-labelledby="h-history">
+    <h2 id="h-history">Letzte Stunde</h2>
+    <p class="explain" id="history-text"></p>
+    <div class="charts" id="charts"></div>
+  </section>
+</main>
+<script>
+const TOKEN = "__TOKEN__";
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const de = (x, d = 1) => Number(x).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+const gb = b => de((b || 0) / 1e9, (b || 0) >= 1e10 ? 0 : 1) + " GB";       // disk: decimal, as Finder counts
+const mgb = b => de((b || 0) / 2 ** 30, (b || 0) >= 10 * 2 ** 30 ? 0 : 1) + " GB";   // memory: binary, as macOS counts RAM
+const cores = pct => de((pct || 0) / 100, 1);
+// CPU load as a share of the whole machine: 100 % = every core busy.
+let CORES = 1;
+const cpuPct = pct => Math.round((pct || 0) / CORES) + " %";
+const SVGNS = "http://www.w3.org/2000/svg";
+const ICON = {
+  bad: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 1.8 15 14H1z" stroke-linejoin="round"/><path d="M8 6.2v3.6M8 11.6v.4" stroke-linecap="round"/></svg>',
+  warn: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.8v4M8 10.9v.4" stroke-linecap="round"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 5v3.4l2.2 1.4" stroke-linecap="round"/></svg>',
+  ok: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+let data = null, paused = false, open = new Set(), timer = null;
+
+function tone(ratio, warn, bad) { return ratio >= bad ? "bad" : ratio >= warn ? "warn" : ""; }
+
+function bar(ratio, cls) {
+  const b = el("div", "bar"); const i = el("i", cls); i.style.width = Math.max(0, Math.min(100, ratio * 100)).toFixed(1) + "%"; b.append(i); return b;
+}
+
+// A line of values in a box of w x h; max fixes the top. Returns the polyline's points.
+function points(values, w, h, max) {
+  if (!values.length) return "";
+  const top = max || Math.max(...values, 1e-9), n = values.length;
+  return values.map((v, i) => `${n === 1 ? w : (i / (n - 1)) * w},${(h - 2 - (Math.min(v, top) / top) * (h - 4)).toFixed(1)}`).join(" ");
+}
+
+function spark(values, cls, max, color, history, name, fmt) {
+  const svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", cls); svg.setAttribute("viewBox", "0 0 110 28");
+  svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("aria-hidden", "true");
+  const line = document.createElementNS(SVGNS, "polyline"); line.setAttribute("points", points(values, 110, 28, max));
+  line.setAttribute("fill", "none"); line.setAttribute("stroke", color || "var(--accent)"); line.setAttribute("stroke-width", "1.5");
+  line.setAttribute("vector-effect", "non-scaling-stroke"); svg.append(line);
+  if (history) hover(svg, history, [{ name, values, color: color || "var(--accent)", fmt }], 110);
+  return svg;
+}
+
+// One tooltip for every plot: a line at the pointer, the time and each series' value there.
+const tip = (() => { const t = document.createElement("div"); t.className = "ptip"; t.setAttribute("role", "status"); t.hidden = true; document.body.append(t); return t; })();
+const gb1 = v => de(v, 1) + " GB";
+function hover(svg, history, series, width) {
+  if (!history || history.length < 2) return;
+  const cursor = document.createElementNS(SVGNS, "line"); cursor.setAttribute("y1", 0); cursor.setAttribute("y2", 1000);
+  cursor.setAttribute("stroke", "var(--muted)"); cursor.setAttribute("vector-effect", "non-scaling-stroke"); cursor.style.display = "none"; svg.append(cursor);
+  const at = ev => {
+    const r = svg.getBoundingClientRect(), f = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+    const i = Math.round(f * (history.length - 1)), x = i / (history.length - 1) * width;
+    cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.style.display = "";
+    tip.replaceChildren(el("b", null, new Date(history[i].t * 1000).toLocaleTimeString("de-DE")));
+    for (const s of series) {
+      const v = s.values[i]; if (v == null) continue;
+      const row = el("span", "row"); row.style.setProperty("--c", s.color);
+      row.append(el("span", "k", s.name), el("span", "v", (s.fmt || gb1)(v))); tip.append(row);
+    }
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.min(innerWidth - w - 8, ev.clientX + 14) + "px";
+    tip.style.top = Math.max(8, ev.clientY - h - 12) + "px";
+  };
+  svg.addEventListener("pointermove", at);
+  svg.addEventListener("pointerleave", () => { tip.hidden = true; cursor.style.display = "none"; });
+}
+
+function chart(title, series, max, threshold, summary, history) {
+  const box = el("div", "chart"); box.append(el("h3", null, title));
+  const svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("viewBox", "0 0 300 130"); svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("role", "img"); svg.setAttribute("aria-label", summary);
+  for (const y of [0.25, 0.5, 0.75]) {
+    const g = document.createElementNS(SVGNS, "line"); g.setAttribute("x1", 0); g.setAttribute("x2", 300); g.setAttribute("y1", 130 * y); g.setAttribute("y2", 130 * y);
+    g.setAttribute("stroke", "var(--line)"); g.setAttribute("vector-effect", "non-scaling-stroke"); svg.append(g);
+  }
+  if (threshold != null) {
+    const y = 128 - (Math.min(threshold, max) / max) * 126;
+    const t = document.createElementNS(SVGNS, "line"); t.setAttribute("x1", 0); t.setAttribute("x2", 300); t.setAttribute("y1", y); t.setAttribute("y2", y);
+    t.setAttribute("stroke", "var(--bad)"); t.setAttribute("stroke-dasharray", "4 4"); t.setAttribute("vector-effect", "non-scaling-stroke"); svg.append(t);
+  }
+  for (const s of series) {
+    const p = document.createElementNS(SVGNS, "polyline"); p.setAttribute("points", points(s.values, 300, 130, max));
+    p.setAttribute("fill", "none"); p.setAttribute("stroke", s.color); p.setAttribute("stroke-width", "1.75"); p.setAttribute("vector-effect", "non-scaling-stroke");
+    if (s.dash) p.setAttribute("stroke-dasharray", "5 3");
+    svg.append(p);
+  }
+  box.append(svg); hover(svg, history, series, 300);
+  const legend = el("div", "legend");
+  for (const s of series) { const l = el("span", s.dash ? "dash" : null, s.name); l.style.setProperty("--c", s.color); legend.append(l); }
+  if (threshold != null) { const l = el("span", "dash", "Warnschwelle"); l.style.setProperty("--c", "var(--bad)"); legend.append(l); }
+  box.append(legend);
+  return box;
+}
+
+function tile(label, big, small, sub, subTone, values, max, color, history, fmt) {
+  const t = el("div", "tile"); t.append(el("div", "eyebrow", label));
+  const b = el("div", "big", big); if (small) b.append(" ", el("small", null, small)); t.append(b);
+  t.append(el("div", "sub" + (subTone ? " " + subTone : ""), sub || ""));
+  if (values && values.length > 1) t.append(spark(values, "spark", max, color, history, label, fmt));
+  return t;
+}
+
+function renderTiles(d) {
+  const n = d.now, h = d.history, m = n.mem || {}, c = n.cores;
+  const tiles = document.getElementById("tiles"); tiles.replaceChildren();
+  const busy = (n.cpu_used || 0) / 100;
+  tiles.append(tile("CPU-Last", Math.round(busy / c * 100) + " %", "", "", "",
+    h.map(x => Math.min(100, (x.cpu || 0) / c)), 100, "var(--accent)", h, v => Math.round(v) + " %"));
+  const swap = (m.swap || 0) / 2 ** 30;
+  tiles.append(tile("Speicher", mgb(m.used), "von " + mgb(m.total),
+    swap >= 0.5 ? `voll: ${de(swap, 1)} GB auf die Platte ausgelagert, das bremst` : "passt in den Arbeitsspeicher", swap >= 4 ? "bad" : swap >= 0.5 ? "warn" : "",
+    h.map(x => (x.mem + x.swap) / 2 ** 30), Math.max((m.total || 1) / 2 ** 30 * 1.5, ...h.map(x => (x.mem + x.swap) / 2 ** 30)), "var(--violet)", h));
+  const free = ((n.disk || {}).free || 0) / 1e9;
+  tiles.append(tile("Platte frei", gb((n.disk || {}).free), "von " + gb((n.disk || {}).total),
+    free < 10 ? "Knapp: Tickets können warten" : free < 20 ? "Wird knapp" : "genug Platz", free < 10 ? "bad" : free < 20 ? "warn" : ""));
+}
+
+function renderRunners(d) {
+  const box = document.getElementById("runners"); box.replaceChildren();
+  const total = d.now.mem.total || 1, capacity = d.now.cores * 100; CORES = d.now.cores || 1;
+  document.getElementById("n-runners").textContent = `${d.runners.filter(r => r.busy).length} von ${d.runners.length} beschäftigt`;
+  if (!d.runners.length) { box.append(el("p", "empty", "Auf diesem Rechner läuft kein selbst gehosteter GitHub-Runner.")); return; }
+  for (const r of d.runners) {
+    const row = el("details", "runner"); row.open = open.has(r.name);
+    row.addEventListener("toggle", () => { row.open ? open.add(r.name) : open.delete(r.name); });
+    const s = el("summary");
+    const who = el("div", "who"); const name = el("b");
+    name.append(el("span", "led " + (r.busy ? "run" : "ok")), r.name); who.append(name);
+    const job = el("span", "job");
+    if (r.job) {
+      if (r.job.ticket && r.job.path) { const a = el("a", null, "#" + r.job.ticket); a.href = r.job.path; job.append(a, " "); }
+      job.append(r.job.step || r.job.label, ` · ${Math.round(r.job.minutes)} min`);
+      job.title = (r.job.title || "") + (r.job.title ? " · " : "") + r.job.label;
+    } else job.append("frei");
+    who.append(job); s.append(who);
+    const cpu = el("div", "meter"); const cpuTone = tone(r.cpu / capacity, 0.35, 0.6);
+    cpu.append(el("span", "v" + (cpuTone ? " " + cpuTone : ""), cpuPct(r.cpu)), bar(r.cpu / capacity, cpuTone)); s.append(cpu);
+    const mem = el("div", "meter"); const memTone = tone(r.mem / total, 0.25, 0.4);
+    mem.append(el("span", "v" + (memTone ? " " + memTone : ""), mgb(r.mem)), bar(r.mem / total, memTone)); s.append(mem);
+    s.append(el("span", "num", r.disk ? gb(r.disk.bytes) : "–"));
+    const sc = el("div", "spark-cell"); sc.append(spark(d.history.map(x => (x.r[r.name] || [0])[0] / d.now.cores), "rspark", 100, "var(--accent)", d.history, "CPU-Last", v => Math.round(v) + " %")); s.append(sc);
+    s.setAttribute("aria-label", `${r.name}: ${r.job ? (r.job.ticket ? "Ticket " + r.job.ticket + ", " : "") + (r.job.step || r.job.label) : "frei"}, CPU-Last ${cpuPct(r.cpu)}, Speicher ${mgb(r.mem)}`);
+    row.append(s);
+    const det = el("div", "detail");
+    const t = el("table"); const head = el("tr"); ["Prozess", "PID", "CPU", "Speicher"].forEach((x, i) => head.append(el("th", i > 1 ? "r" : null, x))); t.append(head);
+    for (const p of r.top) { const tr = el("tr"); tr.append(el("td", null, p.name), el("td", null, String(p.pid)), el("td", "r", cpuPct(p.cpu)), el("td", "r", mgb(p.mem))); t.append(tr); }
+    det.append(t);
+    det.append(el("div", "meta", `${r.procs} Prozesse` + (r.loose ? `, davon ${r.loose} außerhalb des Jobs` : "") + ` · ${r.full}` + (r.repo ? ` · ${r.repo}` : "") + ` · ${r.folder}`));
+    row.append(det); box.append(row);
+  }
+  const o = d.now.outside;
+  if (o) {   // what is not a runner: the owner's apps, the system, the board itself
+    const row = el("details", "runner"); row.open = open.has("_outside");
+    row.addEventListener("toggle", () => { row.open ? open.add("_outside") : open.delete("_outside"); });
+    const s = el("summary");
+    const who = el("div", "who"); const name = el("b"); name.append(el("span", "led"), "außerhalb"); who.append(name, el("span", "job", "System, Apps, Board"));
+    const cpu = el("div", "meter"); cpu.append(el("span", "v", cpuPct(o.cpu)), bar(o.cpu / capacity, "")); 
+    s.append(who, cpu, el("span"), el("span"), el("span"));
+    s.setAttribute("aria-label", `Außerhalb der Runner: CPU-Last ${cpuPct(o.cpu)}`);
+    row.append(s);
+    const det = el("div", "detail"); const t = el("table"); const head = el("tr");
+    ["Prozess", "PID", "CPU", "Speicher"].forEach((x, i) => head.append(el("th", i > 1 ? "r" : null, x))); t.append(head);
+    for (const p of o.top) { const tr = el("tr"); tr.append(el("td", null, p.name), el("td", null, String(p.pid)), el("td", "r", cpuPct(p.cpu)), el("td", "r", mgb(p.mem))); t.append(tr); }
+    det.append(t); row.append(det); box.append(row);
+  }
+}
+
+function renderOrphans(d) {
+  const box = document.getElementById("orphans"); box.replaceChildren();
+  const list = d.now.orphans || [];
+  document.getElementById("n-orphans").textContent = list.length ? String(list.length) : "keine";
+  if (!list.length) { box.append(el("p", "empty", "Keine. Jeder schwere Prozess gehört zu einem laufenden Job.")); return; }
+  for (const o of list) {
+    const it = el("div", "item"); const w = el("div", "what");
+    w.append(el("b", null, `${o.name} · ${o.runner}`));
+    w.append(el("div", "meta", `PID ${o.pid} · ${mgb(o.mem)} · läuft seit ${o.minutes} min` + (o.runner_busy ? " · der Runner fährt schon einen neuen Job" : " · der Runner ist frei")));
+    w.append(el("div", "meta", o.cmd));
+    const btn = el("button", "btn kill", "Beenden"); btn.type = "button";
+    btn.setAttribute("aria-label", `${o.name} auf ${o.runner} beenden (PID ${o.pid})`);
+    btn.onclick = () => askKill(o, btn);
+    it.append(w, btn); box.append(it);
+  }
+}
+
+function askKill(o, trigger) {
+  let dlg = document.getElementById("killdlg");
+  if (!dlg) {
+    dlg = el("dialog"); dlg.id = "killdlg"; dlg.setAttribute("role", "alertdialog");
+    dlg.setAttribute("aria-labelledby", "kill-title"); dlg.setAttribute("aria-describedby", "kill-what");
+    dlg.addEventListener("click", e => { if (e.target === dlg && !dlg.dataset.busy) dlg.close(); });
+    dlg.addEventListener("cancel", e => { if (dlg.dataset.busy) e.preventDefault(); });
+    dlg.addEventListener("close", () => { if (dlg._trigger && dlg._trigger.isConnected) dlg._trigger.focus(); });
+    document.body.append(dlg);
+  }
+  dlg._trigger = trigger; dlg.replaceChildren();
+  const h = el("h2", null, `${o.name} beenden?`); h.id = "kill-title";
+  const p = el("p", null, `PID ${o.pid} auf ${o.runner}, mit allem, was er gestartet hat. Er gehört zu keinem laufenden Job mehr; was er gerade schreibt, geht verloren. Das lässt sich nicht rückgängig machen.`); p.id = "kill-what";
+  const note = el("p", "note");
+  const keep = el("button", "btn", "Weiterlaufen lassen"); keep.type = "button"; keep.onclick = () => dlg.close();
+  const stop = el("button", "btn stop", "Beenden"); stop.type = "button";
+  stop.onclick = async () => {
+    dlg.dataset.busy = "1"; stop.disabled = keep.disabled = true; stop.textContent = "Beendet …"; note.className = "note"; note.textContent = "";
+    try {
+      const r = await fetch("/api/machine/kill", { method: "POST", headers: { "Content-Type": "application/json", "X-Factory-Token": TOKEN }, body: JSON.stringify({ pid: o.pid }) });
+      const out = await r.json();
+      if (out.error) throw new Error(out.error);
+      delete dlg.dataset.busy; dlg.close(); load();
+    } catch (e) {
+      delete dlg.dataset.busy; stop.disabled = keep.disabled = false; stop.textContent = "Beenden";
+      note.className = "note bad"; note.textContent = e.message || "Das hat nicht geklappt.";
+    }
+  };
+  const row = el("div", "buttons"); row.append(keep, stop);
+  dlg.append(h, p, note, row); dlg.showModal(); keep.focus();
+}
+
+function renderHistory(d) {
+  const h = d.history, c = d.now.cores, box = document.getElementById("charts"); box.replaceChildren();
+  const minutes = h.length > 1 ? Math.round((h[h.length - 1].t - h[0].t) / 60) : 0;
+  const loads = h.map(x => x.load / c), peak = Math.max(0, ...loads);
+  const over = loads.filter(v => v >= d.warn_load).length;
+  document.getElementById("history-text").textContent = h.length > 1
+    ? `Die letzten ${minutes} min. Mit der Maus über eine Grafik fahren für die Werte zu jedem Zeitpunkt.`
+    : "Der Verlauf füllt sich, solange das Board läuft.";
+  if (h.length < 2) return;
+  const busy = h.map(x => Math.min(100, (x.cpu || 0) / c));
+  box.append(chart("CPU-Last (%)", [{ name: "CPU-Last", values: busy, color: "var(--accent)", fmt: v => Math.round(v) + " %" }],
+    100, null, `CPU-Last höchstens ${Math.round(Math.max(...busy))} %`, h));
+  const total = (d.now.mem.total || 1) / 2 ** 30;
+  box.append(chart("Speicher (GB)", [{ name: "belegt", values: h.map(x => x.mem / 2 ** 30), color: "var(--violet)" },
+    { name: "auf Platte ausgelagert", values: h.map(x => x.swap / 2 ** 30), color: "var(--warn)", dash: true }],
+    Math.max(total, ...h.map(x => x.swap / 2 ** 30)) * 1.05, null, `Speicher belegt bis ${de(Math.max(...h.map(x => x.mem / 2 ** 30)), 1)} GB von ${de(total, 0)}`, h));
+  const names = Object.keys(h[h.length - 1].r || {});
+  const colors = ["var(--accent)", "var(--violet)", "var(--ok)", "var(--warn)", "var(--indigo)", "var(--text-2)"];
+  box.append(chart("Speicher je Runner (GB)", names.map((n, i) => ({ name: n, values: h.map(x => ((x.r[n] || [0, 0])[1]) / 2 ** 30), color: colors[i % colors.length] })),
+    Math.max(1, ...h.flatMap(x => Object.values(x.r).map(v => v[1] / 2 ** 30))) * 1.1, null, "Speicher je Runner", h));
+}
+
+function render(d) {
+  data = d;
+  const alerts = document.getElementById("alerts"); alerts.replaceChildren();
+  const list = d.alerts.length ? d.alerts : [{ tone: "ok", text: "Alles im grünen Bereich." }];
+  for (const a of list) { const x = el("div", "alert " + a.tone); x.innerHTML = ICON[a.tone] || ICON.info; x.append(el("span", null, a.text)); alerts.append(x); }
+  renderTiles(d); renderRunners(d); renderOrphans(d); renderHistory(d);
+  const meta = document.getElementById("meta"); meta.replaceChildren();
+  const busy = d.runners.filter(r => r.busy).length;
+  const l = el("span"); l.append(el("span", "led " + (d.alerts.some(a => a.tone === "bad") ? "bad" : busy ? "run" : "ok")), " ", el("b", null, `${busy}/${d.runners.length}`), " Runner aktiv"); meta.append(l);
+  document.getElementById("tick").textContent = "Stand " + new Date(d.now.t * 1000).toLocaleTimeString("de-DE");
+}
+
+async function load() {
+  try {
+    const r = await fetch("/api/machine", { cache: "no-store" });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    render(d);
+  } catch (e) {
+    // Usually the board is restarting (after an update) or stopped: say so, keep the last numbers, try again.
+    const down = e instanceof TypeError;   // fetch could not reach the board at all
+    const since = data ? ` Die Zahlen unten sind von ${new Date(data.now.t * 1000).toLocaleTimeString("de-DE")}.` : "";
+    const text = down ? "Das Board ist gerade nicht erreichbar, vielleicht startet es neu. Neuer Versuch läuft von selbst." + since
+                      : "Der Rechner ließ sich gerade nicht lesen (" + (e.message || e) + "). Neuer Versuch läuft von selbst." + since;
+    document.getElementById("alerts").replaceChildren(Object.assign(el("div", "alert warn"), { textContent: text }));
+  }
+}
+function schedule() { clearInterval(timer); if (!paused) timer = setInterval(() => { if (!document.hidden) load(); }, Math.max(3000, ((data && data.sample_s) || 10) * 1000)); }
+document.getElementById("pause").onclick = e => {
+  paused = !paused; e.currentTarget.textContent = paused ? "Weiter" : "Anhalten"; e.currentTarget.setAttribute("aria-pressed", String(paused));
+  if (!paused) load(); schedule();
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) load(); });
+load().then(schedule);
+</script>
+</body>
+</html>

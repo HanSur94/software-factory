@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "plan-review/1",
+  "description": "Written by the plan check.",
+  "type": "object",
+  "required": ["schema", "verdict", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "plan-review/1" },
+    "verdict": { "enum": ["pass", "revise"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "severity": { "enum": ["blocking", "minor"] },
+          "task": { "type": "string" },
+          "text": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

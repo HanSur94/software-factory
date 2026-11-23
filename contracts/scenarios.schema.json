@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scenarios/1",
+  "description": "Written by the scenario writer in the judge job, from the owner's issue alone.",
+  "type": "object",
+  "required": ["schema", "scenarios"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "scenarios/1" },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "user", "steps", "satisfied_when"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "user": { "type": "string", "minLength": 1 },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "satisfied_when": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    }
+  }
+}

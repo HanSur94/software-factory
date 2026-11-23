@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "review/1",
+  "description": "YAML front matter of review.md, written by the reviewer. The Markdown body is free text for the human.",
+  "type": "object",
+  "required": ["schema", "verdict", "blocking", "minor"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "review/1" },
+    "verdict": { "enum": ["approve", "changes"] },
+    "blocking": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "minor": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

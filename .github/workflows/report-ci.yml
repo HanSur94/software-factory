@@ -1,0 +1,55 @@
+name: factory report-ci
+
+# Tells the Software Factory how a project's CI ended on a factory branch, so a red
+# run sends the ticket back to the implementer. The factory starts a ticket's CI
+# with the job token, and GitHub starts no workflow_run for runs a job token
+# started; workflow_dispatch is the one way the result can come back. Called as the
+# last job of a project's CI workflow:
+#
+#   factory:
+#     needs: suite
+#     if: always() && startsWith(github.head_ref || github.ref_name, 'factory/')
+#     permissions:
+#       actions: write
+#     uses: HanSur94/software-factory/.github/workflows/report-ci.yml@main
+#     with:
+#       result: ${{ needs.suite.result }}
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Where the small control jobs of the factory run, as JSON for runs-on (a self-hosted label such as factory-mac keeps everything on one machine)
+        type: string
+        default: '["ubuntu-latest"]'
+      result:
+        description: needs.<job>.result of the job that decides (success, failure, cancelled, skipped)
+        type: string
+        required: true
+      factory_workflow:
+        description: the project's factory workflow
+        type: string
+        default: factory.yml
+
+permissions: {}
+
+jobs:
+  report:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Tell the factory
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          CI_WORKFLOW: ${{ github.workflow }}
+          RESULT: ${{ inputs.result }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FACTORY: ${{ inputs.factory_workflow }}
+        run: |
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+          gh workflow run "$FACTORY" --repo "$GITHUB_REPOSITORY" --ref "$default" \
+            -f ci_branch="$BRANCH" -f ci_workflow="$CI_WORKFLOW" -f ci_conclusion="$RESULT" \
+            -f ci_run_id="$GITHUB_RUN_ID" -f ci_sha="$SHA"
+          echo "Factory told: $CI_WORKFLOW on $BRANCH ended $RESULT"

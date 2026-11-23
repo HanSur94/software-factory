@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "status/1",
+  "description": "Where a ticket stands. Lets a later run continue after a question, a rework round or a restart.",
+  "type": "object",
+  "required": [
+    "schema",
+    "ticket",
+    "phase",
+    "round",
+    "spent_usd"
+  ],
+  "properties": {
+    "schema": {
+      "const": "status/1"
+    },
+    "ticket": {
+      "type": "integer"
+    },
+    "phase": {
+      "enum": [
+        "intake",
+        "plan",
+        "plan_check",
+        "implement",
+        "checks",
+        "rework_judge",
+        "rework_ci",
+        "rework_base",
+        "judge",
+        "delivered",
+        "merged",
+        "rejected",
+        "split"
+      ]
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "branch": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "worktree": {
+      "description": "Folder the ticket branch is checked out in, on the machine that last worked on it.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base_branch": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base_sha": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "waiting": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "reason",
+        "since"
+      ],
+      "properties": {
+        "reason": {
+          "enum": [
+            "intake_questions",
+            "plan_questions",
+            "plan_approval"
+          ]
+        },
+        "since": {
+          "type": "string"
+        }
+      }
+    },
+    "stopped": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stopped_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "spent_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "budget_base": {
+      "type": "number",
+      "minimum": 0
+    },
+    "changed_lines": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "plan_rounds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rework_rounds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "plan_approved": {
+      "type": "boolean"
+    },
+    "plan_feedback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "done_tasks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pr": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "current": {
+      "description": "Station running right now, for the board.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_urls": {
+      "description": "Scheduler runs that worked on this ticket.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "workers": {
+      "description": "Tasks being worked on at the same time right now, each in its own folder.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "task",
+          "worktree",
+          "branch"
+        ],
+        "properties": {
+          "task": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "worktree": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ci_rounds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How often the project's CI on the pull request sent the ticket back."
+    },
+    "conflict_base": {
+      "type": "string",
+      "description": "The commit of the base the factory last merged in because GitHub reported the pull request as conflicting; the same conflict on the same base is not tried again."
+    },
+    "conflict_rounds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How often a merge conflict with the base sent the delivered ticket back."
+    },
+    "ci_findings": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "What the failed CI printed, for the next rework."
+    },
+    "auto_restarts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How often the orchestrator started this ticket again after its run broke off."
+    },
+    "queued": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Why the ticket waits for a free slot."
+    },
+    "dry_run": {
+      "type": "boolean",
+      "description": "The ticket ran without a model (Trockenlauf); it is never merged automatically."
+    }
+  }
+}

@@ -1,0 +1,323 @@
+# Software Factory – zentrale Konfiguration.
+# Alles Wählbare steht hier: Modelle, Reihenfolge, Schwellen, Limits, Runner.
+# Diese Datei hält die Standardwerte. Darüber liegen, in dieser Reihenfolge:
+#   settings.yaml                 – was die Einstellungsseite für alle Projekte geändert hat
+#   .factory/profile.yaml         – Abschnitt "overrides" eines Projekts
+schema: factory/1
+
+# ---- Rollen: Modell, Effort, Prompt und Skills je Station ----------------
+# Ein Modell umstellen heißt: die Zeile "model" der Rolle ändern.
+# tools: read  = darf lesen, das Arbeitsverzeichnis bleibt unverändert
+#        write = darf Code ändern und die Kommandos des Projekts ausführen
+#        run   = darf die Kommandos des Projekts ausführen, aber nichts ändern
+roles:
+  intake:
+    model: claude-haiku-5-5
+    effort: low
+    prompt: stations/intake.md
+    tools: read
+    budget_usd: 0.30
+    timeout_minutes: 10
+  planner:
+    model: claude-fable-5-2
+    effort: high
+    fallback: claude-opus-5-5      # bei Ablehnung oder Ausfall
+    prompt: stations/planner.md
+    tools: read
+    budget_usd: 3.00
+    timeout_minutes: 45
+  plan_check:
+    model: claude-opus-5-5
+    effort: high
+    prompt: stations/plan-check.md
+    tools: read
+    budget_usd: 2.00
+    timeout_minutes: 30
+    # Noch nicht unbeaufsichtigt geprüft; einschalten heißt: Plugin "egm" unten
+    # aktivieren und diese zwei Zeilen einkommentieren.
+    # entry: "/egm:egm-review-loop"
+    # entry_args: "TargetFile={{plan_path}} SemanticTarget='full file' Reviewers=implementation_readiness GoldfishContext={{ticket_path}}"
+  implementer:
+    model: claude-sonnet-5-5
+    effort: medium
+    prompt: stations/implementer.md
+    rework_prompt: stations/rework.md
+    tools: write
+    budget_usd: 4.00
+    timeout_minutes: 60
+    skills:
+      - superpowers:test-driven-development
+      - superpowers:systematic-debugging
+      - superpowers:verification-before-completion
+      - simplify
+    # Wann der Agent einen Skill lädt; ohne Eintrag lädt er ihn immer. Jeder geladene Skill kostet Kontext.
+    skill_when:
+      superpowers:test-driven-development: "when a task adds or changes behaviour that a test can pin down, before you write that code"
+      superpowers:systematic-debugging: "only when a test, build or check fails and the cause is not obvious at a glance"
+      superpowers:verification-before-completion: "once, right before you report your work as done"
+      simplify: "once, when all your tasks are done and the checks pass, on your own diff; not for a change of a few lines"
+  checks:                          # Triage der Check-Logs; die Checks selbst laufen ohne Modell
+    model: claude-haiku-5-5
+    effort: low
+    prompt: stations/triage.md
+    tools: read
+    budget_usd: 0.30
+    timeout_minutes: 10
+  reviewer:
+    model: claude-opus-5-5
+    effort: high
+    prompt: stations/reviewer.md
+    tools: read
+    budget_usd: 2.50
+    timeout_minutes: 30
+    skills: [code-review]
+    sensitive_skills: [security-review]
+  judge:
+    model: claude-opus-5-5
+    effort: high
+    prompt: stations/judge.md
+    tools: run
+    budget_usd: 3.00
+    timeout_minutes: 45
+  scenario_writer:                 # schreibt die Szenarien des Richters aus dem Issue, wenn es kein Szenario-Repo gibt
+    model: claude-opus-5-5
+    effort: high
+    prompt: stations/scenario-writer.md
+    tools: read
+    budget_usd: 1.00
+    timeout_minutes: 15
+  backlog:                         # schlägt neue Tickets vor, wenn die Factory nichts zu tun hat
+    model: claude-sonnet-5-5         # gedrosselt: Vorschläge prüft ohnehin ein Mensch (mode: manual)
+    effort: medium
+    prompt: stations/backlog.md
+    tools: read
+    budget_usd: 1.00
+    timeout_minutes: 30
+  cartographer:                    # zeichnet den Grundriss des Projekts mit floorplan (factory/floormap.py)
+    model: claude-sonnet-5-5
+    effort: medium
+    prompt: stations/cartographer.md
+    tools: write                     # schreibt nur floorplan/; starten darf er nur die Skripte von floorplan
+    budget_usd: 4.00
+    timeout_minutes: 12
+    skills: ["floorplan:floorplan"]
+  escalation:                      # übernimmt die Nacharbeit nach "escalate_after" Runden
+    model: claude-fable-5-2
+    effort: high
+
+# ---- Steuerung -------------------------------------------------------------
+pipeline:
+  # advisory = läuft und berichtet, blockiert aber nicht
+  # gate     = blockiert und schickt zurück
+  # off      = Station wird übersprungen
+  modes: { plan_check: advisory, review: advisory, judge: advisory }
+  promote_after: { agreement: 0.9, tickets: 20 }   # Beispielwerte, noch offen
+  human_plan_approval_above: { tasks: 5 }
+  # Was bei Unklarheiten passiert:
+  #   ask    = das Ticket hält an und fragt dich im Issue
+  #   assume = Intake und Planer entscheiden selbst, schreiben die Annahme in den Pull Request
+  #            und halten nur an, wenn etwas fehlt, das nur du hast (Installation, Zugang,
+  #            Geheimnis) oder eine falsche Annahme teuer wäre. Große Pläne warten nicht auf /approve.
+  questions: ask
+  # Tasks eines Tickets, die nicht voneinander abhängen und verschiedene Dateien anfassen,
+  # laufen gleichzeitig, jeder Arbeiter in einem eigenen Ordner. 1 = alle nacheinander.
+  parallel_tasks: 3
+  max_plan_rounds: 2
+  max_rework_rounds: 3
+  # Schätzt der Planer mehr geänderte Zeilen als das, wird jeder Task ein eigenes Ticket mit eigenem
+  # Pull Request (factory/split.py). 0 schaltet das ab.
+  split_above_lines: 800
+  escalate_after: 2
+  max_judge_rounds: 2
+  # Ein beratender Richter hält nichts auf. Mit einer Zahl > 0 bessert die Factory trotzdem so viele Runden
+  # selbst nach, wenn er Fehlerbilder findet; danach kommt der Pull Request, wie er ist. Von Hand geht das
+  # immer: Label `rework` bzw. „Nachbessern“ auf dem Board.
+  advisory_judge_rounds: 0
+  # Nach so vielen Minuten übergibt ein Lauf das Ticket an einen neuen Lauf, statt neue Arbeit zu
+  # beginnen: der Arbeits-Job in run-ticket.yml endet nach 180 Minuten hart (0 = keine Übergabe).
+  max_run_minutes: 150
+  # Wie oft eine rote CI auf dem Pull Request das Ticket zur Nacharbeit zurückschickt, bevor es anhält.
+  max_ci_rounds: 3
+
+# ---- Prüfung ---------------------------------------------------------------
+verify:
+  satisfaction_threshold: 0.9      # Beispielwert, noch offen
+  # Ohne Szenario-Repo schreibt ein eigener Agent im Richter-Job die Szenarien aus dem Issue: Er sieht
+  # weder Code noch Plan, und der Implementierer sieht die Szenarien nie (factory/judge.py).
+  generated_scenarios: { enabled: true, count: 5 }
+  # Die Sitzung des Richters bleibt auf seinem Rechner (~/.software-factory/judge, nie auf GitHub). Das Board auf
+  # demselben Rechner zeigt sie, sobald das Ticket fertig ist: Vorher könnte eine neue Runde die Szenarien lernen.
+  keep_judge_sessions: true
+  limits: { max_changed_lines: 400 }
+
+# ---- Bild-Belege (factory/evidence.py) ----------------------------------------
+# Nach grünen Checks sammelt die Factory Bilder der Änderung: die der Agents (der Implementierer legt
+# Screenshots in einen Ordner außerhalb des Repos), die vom Diff geänderten und die des Aufnahme-Befehls
+# im Projektprofil (evidence.capture: vorher auf der Basis, nachher auf dem Ticket-Branch). Verkleinert
+# landen sie auf dem State-Branch, im Board und im Pull Request. Belege halten nie ein Ticket an.
+evidence:
+  enabled: true
+  max_images: 12                   # je Runde; die Aufnahme-Paare zuerst
+  max_px: 1600                     # längste Seite
+  max_kb: 600                      # größere PNGs werden JPEG
+  reviewer_sees: true              # der Reviewer schaut sich die Bilder an (je Bild etwa 1.500 Tokens)
+  judge_sees: true                 # der Richter auch
+
+# ---- Sicherheit und Budgets --------------------------------------------------
+limits:
+  budget_usd_per_ticket: 15.00     # Beispielwert, noch offen
+  # Vor Umsetzung und Checks wartet ein Ticket, bis so viel Platz frei ist (0 = keine Prüfung).
+  # Wichtig auf eigenen Runnern, die sich eine Platte teilen: voll scheitern alle Jobs zugleich.
+  min_free_disk_gb: 0
+  # Wie viele Tickets gleichzeitig laufen; weitere warten mit dem Label factory:queued, bis
+  # ein Platz frei wird. 0 = ohne Grenze.
+  max_parallel_tickets: 0
+  # Ausgaben aller Tickets eines Tages (UTC) in USD; danach starten keine neuen Läufe mehr
+  # bis zum nächsten Tag. 0 = ohne Grenze.
+  daily_budget_usd: 0
+  protected_paths: [".github/", ".factory/"]
+
+# ---- Laufzeit: welche Fähigkeit läuft wo ------------------------------------
+# Ein Projektprofil sagt, welche Fähigkeit seine Jobs brauchen
+# (runtime: { work: self-hosted, judge: linux }); hier steht, wo sie läuft. Ein Projekt, das mehr braucht
+# (eine Engine mit Lizenz, eine GPU), legt in seinem Profil eine eigene Fähigkeit mit den Labels seines Runners an.
+runtime:
+  capabilities:
+    linux:       { provider: github-hosted, runs_on: [ubuntu-latest] }
+    self-hosted: { provider: self-hosted,   runs_on: [self-hosted] }
+    macos:       { provider: self-hosted,   runs_on: [self-hosted, macOS] }
+  jobs: { work: linux, judge: linux }
+
+host:    { code: github, tickets: github-issues, scheduler: github-actions }
+models:  { provider: anthropic-api }
+storage: { state: repo-files, branch: factory-state }
+secrets: { source: repo-secrets }
+
+# ---- Rechner: die Rechner-Seite des Boards (/machine) ------------------------------------------
+# Mehrere Runner auf einem Rechner teilen sich Kerne, Arbeitsspeicher und Platte; die Seite zeigt, wer wie viel
+# braucht, und findet verwaiste schwere Prozesse (ein Editor oder eine Engine, deren Job schon endete).
+machine:
+  heavy_processes: []              # reguläre Ausdrücke auf die Befehlszeile, je nach den Werkzeugen der Projekte
+  sample_seconds: 10               # so oft liest das Board den Rechner (/machine)
+  warn_load: 1.5                   # Last je Kern, ab der die Seite warnt
+  warn_swap_gb: 4                  # ausgelagerter Speicher, ab dem sie warnt
+  orphan_minutes: 3                # ein schwerer Prozess oder Agent ohne Job gilt danach als verwaist
+
+# ---- Mensch-Schnittstelle ----------------------------------------------------
+human:
+  channel: issue-comment
+  labels:
+    go: "factory:go"
+    rework: "factory:rework"       # ein gelieferter PR bekommt eine Runde mit den Fehlerbildern des Richters
+    running: "factory:running"
+    waiting: "factory:waiting"
+    review: "factory:review"
+    done: "factory:done"
+    needs_human: "factory:needs-human"
+    rejected: "factory:rejected"
+    queued: "factory:queued"
+    split: "factory:split"         # ein großes Ticket, aufgeteilt in Teil-Tickets
+    part: "factory:part"           # ein Teil-Ticket; wird nie weiter aufgeteilt
+    blocked: "factory:blocked"     # ein Teil-Ticket, das auf andere Teile wartet
+    proposed: "factory:proposed"   # vom Backlog-Planer vorgeschlagen; startet erst mit factory:go
+    aborted: "factory:aborted"     # von Hand abgebrochen (Board): kein Lauf, kein Orchestrator fasst es an
+
+# ---- Auslieferung ------------------------------------------------------------
+delivery:
+  mode: pull-request
+  # Dark: true merged ohne Menschen, wenn alle Regeln unten erfüllt sind. Ein Projekt
+  # schaltet das in seinem Profil ein (overrides); neue Projekte starten ohne.
+  auto_merge: false
+  auto_merge_rules:
+    method: squash
+    max_changed_lines: 200         # größere Änderungen bleiben beim Menschen (Beispielwert)
+    min_scenarios: 3               # ein Richter mit zu wenigen Szenarien reicht nicht
+    allow_sensitive: false         # als sensibel markierte Tickets bleiben beim Menschen
+    require_judge: true            # false: merged auch ohne Richter-Szenarien, wenn die CI grün ist
+    allow_assumptions: false       # true: auch Tickets mit eigenen Annahmen (questions: assume)
+  branch_prefix: "factory/"
+  # Ist ein Ticket gemergt, schreibt die Factory einen Abschlussbericht ins Issue: Auftrag, was umgesetzt
+  # wurde, Nachweise (Checks, Review, Richter, CI), Bild-Belege, Annahmen und Aufwand (factory/summary.py).
+  closing_summary: true
+  # Ein Pull Request der Factory startet keine Workflows des Projekts. Verlangt der Branch-Schutz
+  # Checks, startet die Factory die hier genannten Workflows selbst auf dem Ticket-Branch
+  # (sie brauchen den Auslöser workflow_dispatch). Eintrag: Dateiname, oder { file, inputs }.
+  trigger_workflows: []
+  author: { name: software-factory, email: software-factory@users.noreply.github.com }
+
+metrics: { events: events.jsonl }
+
+# ---- Board: python3 -m factory board ------------------------------------------
+board:
+  port: 8787
+  # Benachrichtigungen auf diesem Mac (factory/watch.py): angehaltene und wartende Tickets, ein
+  # laufendes Ticket ohne Ereignis seit stall_minutes, und weniger freier Speicher als min_free_disk_gb.
+  notify: true
+  stall_minutes: 30
+  min_free_disk_gb: 15
+  # GitHub lässt geplante Läufe oft aus. Lief der Orchestrator eines Projekts so viele Minuten nicht,
+  # startet das Board ihn selbst (factory/keepalive.py); 0 schaltet das ab.
+  keepalive_minutes: 40
+  # Kosten in Dollar (Schätzung nach Listenpreis) statt Tokens zeigen. Mit einem Abo zählen die Tokens.
+  show_cost: false
+  repos: []                        # Produkt-Repos, deren Tickets das Board zeigt (owner/name)
+  local: []                        # Ordner lokaler Läufe
+
+# ---- Ausführender Agent ------------------------------------------------------
+agent:
+  harness: claude                  # Agent-CLI (factory/harness); eine Rolle kann mit roles.<rolle>.harness abweichen
+  command: claude                  # Programm des Standard-Harness
+  version: latest                  # Version des Standard-Harness auf dem Runner (agent.versions.<harness> für andere)
+  setting_sources: project         # keine Nutzer-Einstellungen, Hooks oder Plugins des Rechners
+  strict_mcp: true
+  env_passthrough: []
+  rtk: true                        # RTK (Rust Token Killer) kürzt die Ausgaben der Shell-Befehle; wirkt nur, wo rtk installiert ist
+
+# ---- Skill-Packs, auf einen Commit festgenagelt --------------------------------
+plugins:
+  superpowers:
+    repo: obra/superpowers
+    ref: 22f0b463e7a5e579904dd6211a520321035526f7
+    enabled: true
+  floorplan:                       # der Grundriss eines Projekts (factory/floormap.py); braucht Node 18+
+    repo: haydenschmitty/floorplan
+    ref: 94f81b463b7617e06d873ac71323ce71644c8399
+    enabled: true
+  egm:
+    repo: google/elephant-goldfish-model
+    ref: 72d06f52a2482885d9a64bd24b291c6e8628942c
+    enabled: false
+
+# ---- Orchestrator: python3 -m factory orchestrate ------------------------------
+# Läuft im Aufruf-Workflow des Projekts nach Zeitplan und schaut nach allen Tickets:
+# startet abgebrochene Läufe neu, holt verpasste CI-Ergebnisse nach und startet
+# wartende Tickets, sobald ein Platz frei ist.
+orchestrator:
+  max_auto_restarts: 2             # je Ticket; danach bleibt es angehalten
+  stale_minutes: 20                # so lange ohne Ereignis und ohne Lauf gilt ein Ticket als abgebrochen
+
+# Der Grundriss (factory/floormap.py): Wer keinen Code liest, sieht an einem Diff nicht, was gebaut wurde. Der
+# Kartograf zeichnet im Lauf des Orchestrators eine Karte des Basis-Branches (Teile, Dateien, Verbindungen, alles auf
+# Deutsch beschrieben) und hält sie nach jedem Merge aktuell; meist ohne Modell, nur neue Dateien beschreibt ein Agent.
+# Jedes Ticket legt nach grünen Checks seine Änderung darüber: Pull Request und Abschlussbericht zeigen die berührten
+# Teile als Diagramm, das Board die ganze Karte mit den markierten Dateien. Braucht Node 18+ auf dem Runner.
+map:
+  enabled: true
+  every_minutes: 60                # nach einem Fehlschlag frühestens so viel später noch einmal
+  max_parts: 12                    # so viele berührte Teile zeigt das Diagramm höchstens
+
+# Der Backlog-Planer (factory/backlog.py): hat die Factory nichts zu tun und ist kein Vorschlag offen,
+# schlägt ein Agent aus den Design-Dokumenten des Projekts bis zu max_proposals Tickets vor (Label
+# proposed). Aus, bis ein Projekt ihn einschaltet.
+#   mode: manual  jeder Vorschlag erscheint auf dem Board unter „Braucht dich“; gebaut wird erst, wenn du
+#                 ihn dort startest (oder factory:go setzt). Verwerfen schließt das Issue.
+#   mode: auto    Vorschläge starten sofort, ohne dich zu fragen.
+backlog:
+  enabled: false
+  mode: manual
+  every_hours: 72                  # höchstens alle 3 Tage ein Lauf, und nur wenn nichts zu tun ist
+  max_proposals: 3
+  closed_days: 30
+  sources: [README.md, docs/]
+
+

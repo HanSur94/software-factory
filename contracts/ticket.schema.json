@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ticket/1",
+  "description": "Written by intake. The mandate is fixed from here on; later stations work from this file, not from the issue.",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "title",
+    "status",
+    "mandate",
+    "acceptance",
+    "size",
+    "sensitive"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "ticket/1"
+    },
+    "id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "needs_info",
+        "rejected"
+      ]
+    },
+    "mandate": {
+      "type": "string"
+    },
+    "acceptance": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "out_of_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "size": {
+      "enum": [
+        "S",
+        "M",
+        "L"
+      ]
+    },
+    "sensitive": {
+      "type": "boolean"
+    },
+    "questions": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "reason": {
+      "type": "string"
+    },
+    "assumptions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Choices made instead of asking the owner (pipeline.questions: assume); shown in the pull request."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ready"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "mandate": {
+            "minLength": 1
+          },
+          "acceptance": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "needs_info"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "questions"
+        ],
+        "properties": {
+          "questions": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rejected"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

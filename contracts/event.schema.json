@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "event/1",
+  "description": "One line of events.jsonl. Everything the factory measures is derived from these.",
+  "type": "object",
+  "required": [
+    "schema",
+    "ts",
+    "ticket",
+    "station",
+    "kind"
+  ],
+  "properties": {
+    "schema": {
+      "const": "event/1"
+    },
+    "ts": {
+      "type": "string"
+    },
+    "ticket": {
+      "type": "integer"
+    },
+    "round": {
+      "type": "integer"
+    },
+    "station": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "agent",
+        "verdict",
+        "check",
+        "guard",
+        "human",
+        "pipeline"
+      ]
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "effort": {
+      "type": "string"
+    },
+    "harness": {
+      "description": "Agent CLI the run used (factory/harness).",
+      "type": "string"
+    },
+    "cost_usd": {
+      "type": "number"
+    },
+    "duration_s": {
+      "type": "number"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "skills_offered": {
+      "description": "Skills the station was told it may use.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skills_used": {
+      "description": "Skills the agent actually invoked.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "turns": {
+      "type": "integer"
+    },
+    "tool_calls": {
+      "type": "integer"
+    },
+    "subagents": {
+      "type": "integer"
+    },
+    "tools": {
+      "description": "Tool name to number of calls.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "runtime": {
+      "description": "Where the station ran.",
+      "type": "object"
+    },
+    "tokens": {
+      "description": "input, output, cache_read, cache_write",
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "context_peak": {
+      "description": "Most tokens in the context window at any point of the run.",
+      "type": "integer"
+    },
+    "context_window": {
+      "type": "integer"
+    },
+    "subscription": {
+      "description": "Per limit window of the Claude plan: share used at start and end of the run.",
+      "type": "object"
+    },
+    "seq": {
+      "description": "Number of the agent run; its log and session file carry the same number.",
+      "type": "integer"
+    },
+    "task": {
+      "description": "Task of the plan this run worked on.",
+      "type": "string"
+    }
+  }
+}

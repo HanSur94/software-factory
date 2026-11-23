@@ -1,0 +1,74 @@
+name: factory ci-result
+
+# The project's CI finished on a factory branch. Red sends the ticket back to the
+# implementer and starts its workflow again; green is recorded. Called from the
+# product repository on workflow_run, so the agents never wait for the runner
+# the CI needs (a self-hosted Mac with Unity): only the pull request does.
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Where the small control jobs of the factory run, as JSON for runs-on (a self-hosted label such as factory-mac keeps everything on one machine)
+        type: string
+        default: '["ubuntu-latest"]'
+      branch:
+        type: string
+        required: true
+      workflow:
+        type: string
+        required: true
+      conclusion:
+        type: string
+        required: true
+      run_id:
+        type: string
+        required: true
+      sha:
+        type: string
+        default: ''
+      base:
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  record:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+      actions: write
+    steps:
+      # A self-hosted runner keeps its checkout, and git still lists the worktrees the factory
+      # made in RUNNER_TEMP, which is gone now. Those worktrees hold their branches, so the
+      # checkout below cannot delete them and recreates the whole directory instead, losing
+      # every build cache in it (Unity's Library/). Pruning releases them first.
+      - name: Release worktrees of earlier jobs
+        if: runner.environment != 'github-hosted'
+        shell: bash
+        run: git -C "$GITHUB_WORKSPACE" worktree prune 2>/dev/null || true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base || github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+          # A self-hosted runner keeps ignored build caches (Unity's Library/) in its checkout.
+          clean: ${{ runner.environment == 'github-hosted' }}
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
+        with:
+          python-version: '3.12'
+      - uses: HanSur94/software-factory@main
+        with:
+          command: ci-result --repo .
+        env:
+          FACTORY_CI_BRANCH: ${{ inputs.branch }}
+          FACTORY_CI_WORKFLOW: ${{ inputs.workflow }}
+          FACTORY_CI_CONCLUSION: ${{ inputs.conclusion }}
+          FACTORY_CI_RUN_ID: ${{ inputs.run_id }}
+          FACTORY_CI_SHA: ${{ inputs.sha }}
+          FACTORY_GH_TOKEN: ${{ github.token }}
+          FACTORY_BASE: ${{ inputs.base || github.event.repository.default_branch }}
+          FACTORY_CALLER_WORKFLOW: ${{ github.workflow_ref }}
