@@ -835,6 +835,7 @@ def board(repos: list[str], local: list[str], branch: str, pending: dict | None 
     for p in projects:
         if p["source"].startswith("gh:"):
             seen = keepalive.STATE.get(p["repo"]) or {}
+            p["paused"] = project_paused(p["repo"])
             p["orchestrator"] = {**(orchestrators.get(p["repo"]) or {"sweeps": [], "backlog_runs": []}),
                                  "kicked": seen.get("kicked") or None, "can_kick": not seen.get("unsupported"),
                                  "every_minutes": keepalive.MINUTES}
@@ -965,6 +966,85 @@ def abort(repo: str, number: int, branch: str, force_after: float = 45.0) -> dic
     word = "1 Lauf" if len(cancelled) == 1 else f"{len(cancelled)} Läufe"
     return {"ok": True, "cancelled": cancelled,
             "message": f"#{number} ist abgebrochen: {word} gestoppt." if cancelled else f"#{number} ist abgebrochen; es lief gerade kein Lauf."}
+
+
+# ---- stopping a whole project ---------------------------------------------------------------
+
+ACTIVE = ("in_progress", "queued", "waiting", "pending", "requested")
+_paused: dict = {}   # repo -> (when read, paused): the workflow's state, read at most once a minute
+
+
+def project_paused(repo: str, now: float | None = None) -> bool:
+    """Whether the project's factory workflow is switched off: then nothing of the factory starts there."""
+    now = time.time() if now is None else now
+    seen = _paused.get(repo)
+    if seen and now - seen[0] < 60:
+        return seen[1]
+    try:
+        state = (_gh_json("api", f"repos/{repo}/actions/workflows/{keepalive.WORKFLOW}") or {}).get("state", "active")
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError):
+        return seen[1] if seen else False
+    paused = state != "active"
+    _paused[repo] = (now, paused)
+    keepalive.STATE.setdefault(repo, {"kicked": 0.0})["paused"] = paused
+    return paused
+
+
+def _active_runs(repo: str) -> list[str]:
+    """Unfinished runs of the factory workflow, and of any workflow on a factory branch (a ticket's own CI)."""
+    ids: list[str] = []
+    for status in ACTIVE:
+        for path, every in ((f"repos/{repo}/actions/workflows/{keepalive.WORKFLOW}/runs", True),
+                            (f"repos/{repo}/actions/runs", False)):
+            try:
+                runs = (_gh_json("api", f"{path}?status={status}&per_page=100") or {}).get("workflow_runs") or []
+            except RuntimeError:
+                continue
+            for run in runs:
+                if (every or str(run.get("head_branch") or "").startswith("factory/")) and str(run["id"]) not in ids:
+                    ids.append(str(run["id"]))
+    return ids
+
+
+def pause_project(repo: str, force_after: float = 45.0) -> dict:
+    """Stop everything the factory does in one project: the workflow is switched off first, so neither the
+    schedule, a label, a comment nor the orchestrator starts anything; then every unfinished run is cancelled.
+    Tickets, branches and pull requests stay; resume_project carries on."""
+    _paused.pop(repo, None)
+    if not _gh_ok("workflow", "disable", keepalive.WORKFLOW, "--repo", repo) and not project_paused(repo):
+        return {"error": f"Der Workflow {keepalive.WORKFLOW} von {repo} ließ sich nicht ausschalten."}
+    _paused[repo] = (time.time(), True)
+    keepalive.STATE.setdefault(repo, {"kicked": 0.0})["paused"] = True
+    ids = _active_runs(repo)
+    cancelled = [i for i in ids if _gh_ok("run", "cancel", i, "--repo", repo)]
+
+    def insist():   # a run that ignores the cancel is ended by force, as with a single ticket
+        time.sleep(force_after)
+        for i in cancelled:
+            run = _gh_json("api", f"repos/{repo}/actions/runs/{i}")
+            if (run or {}).get("status") != "completed":
+                _gh_ok("api", "-X", "POST", f"repos/{repo}/actions/runs/{i}/force-cancel")
+    if cancelled:
+        threading.Thread(target=insist, daemon=True).start()
+    word = "1 Lauf" if len(cancelled) == 1 else f"{len(cancelled)} Läufe"
+    return {"ok": True, "cancelled": cancelled,
+            "message": f"{repo.split('/')[-1]} ist angehalten: {word} gestoppt." if cancelled
+            else f"{repo.split('/')[-1]} ist angehalten; es lief gerade nichts."}
+
+
+def resume_project(repo: str) -> dict:
+    """Switch the workflow on again and start the orchestrator: it picks up the tickets the stop cut short."""
+    if not _gh_ok("workflow", "enable", keepalive.WORKFLOW, "--repo", repo):
+        return {"error": f"Der Workflow {keepalive.WORKFLOW} von {repo} ließ sich nicht einschalten."}
+    _paused[repo] = (time.time(), False)
+    seen = keepalive.STATE.setdefault(repo, {"kicked": 0.0})
+    seen["paused"] = False
+    kicked = keepalive.kick(repo) == "ok"
+    if kicked:
+        seen["kicked"] = time.time()
+    return {"ok": True, "message": f"{repo.split('/')[-1]} läuft wieder" + (
+        "; der Orchestrator ist angestoßen und nimmt die unterbrochenen Tickets wieder auf." if kicked
+        else ". Der Orchestrator kommt mit seinem nächsten geplanten Lauf.")}
 
 
 STATIC = {"/theme.css": "text/css; charset=utf-8", "/theme.js": "text/javascript; charset=utf-8",   # shared by both pages
@@ -1240,6 +1320,15 @@ def serve(repos: list[str], local: list[str], branch: str, port: int, conf: dict
                 self._send(html.encode(), "text/html; charset=utf-8")
             elif url.path == "/api/live":
                 self._json(monitor.tickets)
+            elif url.path in ("/api/project/pause", "/api/project/resume"):
+                def switch():
+                    kind, _, repo = str(body.get("source") or "").partition(":")
+                    if kind != "gh" or repo not in repos:
+                        return {"error": "Anhalten geht nur bei Projekten auf GitHub; ein lokaler Lauf endet mit Strg+C."}
+                    result = pause_project(repo) if url.path.endswith("pause") else resume_project(repo)
+                    snap.stale()
+                    return result
+                self._json(switch)
             elif url.path == "/api/cleanup":
                 def look():
                     kind, _, repo = (parse_qs(url.query).get("source") or [""])[0].partition(":")
@@ -1338,6 +1427,15 @@ def serve(repos: list[str], local: list[str], branch: str, port: int, conf: dict
                     snap.stale()
                     return result
                 self._json(stop)
+            elif url.path in ("/api/project/pause", "/api/project/resume"):
+                def switch():
+                    kind, _, repo = str(body.get("source") or "").partition(":")
+                    if kind != "gh" or repo not in repos:
+                        return {"error": "Anhalten geht nur bei Projekten auf GitHub; ein lokaler Lauf endet mit Strg+C."}
+                    result = pause_project(repo) if url.path.endswith("pause") else resume_project(repo)
+                    snap.stale()
+                    return result
+                self._json(switch)
             elif url.path == "/api/cleanup":
                 def clean():
                     kind, _, repo = str(body.get("source") or "").partition(":")

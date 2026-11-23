@@ -50,8 +50,8 @@ def tick(repos: list[str], state: dict, now: float, minutes: float, *, last=last
     """Start the orchestrator of every project whose last run, scheduled or started here, is too old."""
     started = []
     for repo in repos:
-        if state.get(repo, {}).get("unsupported"):
-            continue
+        if state.get(repo, {}).get("unsupported") or state.get(repo, {}).get("paused"):
+            continue   # an old workflow, or a project stopped on the board: nothing to start
         seen = state.setdefault(repo, {"kicked": 0.0})
         try:
             ran = max(last(repo), seen["kicked"])
@@ -68,6 +68,9 @@ def tick(repos: list[str], state: dict, now: float, minutes: float, *, last=last
         elif result == "unsupported":
             seen["unsupported"] = True
             print(f"[factory] {repo}: factory.yml kennt orchestrate=true nicht, kein Ersatz für den Zeitplan", flush=True)
+        elif "disabled workflow" in result:
+            seen["paused"] = True   # switched off on the board or on GitHub: wait until it is switched on again
+            print(f"[factory] {repo}: Factory-Workflow ist ausgeschaltet, der Orchestrator wird nicht angestoßen", flush=True)
         else:
             print(f"[factory] keepalive {repo}: {result}", flush=True)
     return started
