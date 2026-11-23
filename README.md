@@ -6,6 +6,12 @@
 
 Ein GitHub-Issue mit dem Label `factory:go` wird hier zu einem geprüften Pull Request: Agents planen, schreiben und prüfen den Code, ein getrennter Richter prüft das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat. Im Dark-Modus wird der Pull Request danach ohne Menschen gemergt; sonst mergst du von Hand.
 
+<p align="center">
+  <a href="https://hansur94.github.io/software-factory/"><img src="docs/assets/board-kanban-dark.webp" alt="Das Board der Software Factory mit Kennzahlen, wartenden Tickets und dem Fließband" width="100%"></a>
+</p>
+
+<p align="center"><b><a href="https://hansur94.github.io/software-factory/">Projektseite</a></b> · <a href="#schnellstart">Schnellstart</a> · <a href="#board">Board</a> · <a href="CONTRIBUTING.md">Mitmachen</a></p>
+
 > **In English:** Software Factory turns a GitHub issue labelled `factory:go` into a reviewed pull request. Claude agents plan, implement and review the change in fixed stations, driven by a plain Python script rather than by an agent. A separate judge then tests the result against hidden scenarios the implementer never saw. A local board shows every ticket on a production line. It runs on GitHub Actions (hosted or self-hosted runners) or locally. The documentation below is in German.
 
 ## Schnellstart
@@ -238,6 +244,18 @@ Ein kleines Kanban-Board zeigt alle Tickets nach ihrem Stand: Eingang, Planung, 
 ```bash
 python3 -m factory board
 ```
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/assets/flow-signal-dark.webp" alt="Stellwerk: die Stationen als Netz, Linien zeigen den Durchsatz"><br><sub><b>Stellwerk:</b> wo Tickets liegen und wie sie fließen</sub></td>
+    <td width="50%"><img src="docs/assets/ticket-dark.webp" alt="Ein geöffnetes Ticket mit dem Ablauf seiner Stationen"><br><sub><b>Ticket:</b> jeder Schritt mit Modell und Dauer</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/assets/flow-timetable-light.webp" alt="Fahrplan: jedes Ticket auf einer Zeitachse"><br><sub><b>Fahrplan:</b> wohin die Zeit ging</sub></td>
+    <td width="50%"><img src="docs/assets/flow-line-dark.webp" alt="Linie: die Stationen als Abschnitte der Halle"><br><sub><b>Linie:</b> das Band von der Seite</sub></td>
+  </tr>
+</table>
+
 
 Danach `http://127.0.0.1:8787` öffnen. Jedes Projekt hat sein eigenes Board unter `/p/OWNER/REPO` (lokale Läufe unter `/p/local/N`): oben was dich braucht, darunter das Fließband mit einer Bahn je Station, am Ende die fertigen Tickets. Die Startseite zeigt alle Projekte als Kacheln mit offenen Punkten, laufender Arbeit und Kosten; ist nur ein Projekt verbunden, öffnet sie direkt dessen Board. Über die Leiste oben wechselst du zwischen den Projekten. Das Board liest nur: den Branch `factory-state` der Repos unter `board.repos` in `settings.local.yaml` (über `gh`) und die lokalen Läufe unter `board.local`. Es aktualisiert sich alle 8 Sekunden; ein Ticket, an dem gerade gearbeitet wird, hat einen blauen Rand.
 
