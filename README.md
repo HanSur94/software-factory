@@ -7,12 +7,37 @@
 A GitHub issue with the label `factory:go` becomes a reviewed pull request here: agents plan, write and review the code, and a separate judge tests the result against scenarios the implementer never saw. In dark mode the pull request is then merged without a human; otherwise you merge by hand.
 
 <p align="center">
-  <a href="https://hansur94.github.io/software-factory/?lang=en"><img src="docs/assets/board-kanban-dark.webp" alt="The Software Factory board with key figures, waiting tickets and the production line" width="100%"></a>
+  <a href="https://hansur94.github.io/software-factory/?lang=en"><img src="docs/assets/belt-en.svg" alt="The production line: a ticket drops in, robot arms stamp, plan, weld and seal it, and it leaves as a pull request" width="100%"></a>
 </p>
 
 <p align="center"><b><a href="https://hansur94.github.io/software-factory/?lang=en">Project page</a></b> · <a href="#quick-start">Quick start</a> · <a href="#board">Board</a> · <a href="CONTRIBUTING.md">Contributing</a> · <a href="README.de.md">Deutsch</a></p>
 
 > **Language:** The board, the settings page and the comments the factory writes on issues are in German. The station prompts are in English. This README names the German labels where you need them to find a button. `CONTRIBUTING.md` and `SECURITY.md` are in German too.
+
+## One real ticket
+
+Not a staged example: this is a run of the factory in a test project, a small to-do list for the command line. The issue asked for a command `todo remove N`. Times and costs come from the files of that run.
+
+| Station | Model | Time | Cost | Result |
+|---|---|--:|--:|---|
+| Intake | Haiku 5.5 | 15 s | $0.004 | fixed mandate, size S, 5 acceptance criteria |
+| Planner | Fable 5.2 | 63 s | $0.175 | 1 task, 9 acceptance criteria, 5 named risks |
+| Plan check | Opus 5.5 | 19 s | $0.165 | passed, 0 blocking points |
+| Implementer | Sonnet 5.5 | 27 s | $0.105 | `todo/cli.py` and `tests/test_cli.py` |
+| Checks | – | < 1 s | – | project tests green |
+| Reviewer | Opus 5.5 | 39 s | $0.232 | approved, 0 blocking, 5 remarks |
+| Judge | Opus 5.5 | 53 s | $0.294 | 6 of 6 hidden scenarios passed |
+| **Total** | | **3 min 37 s** | **$0.98** | from label to verdict |
+
+That ticket is small. In eight days of real use in two private projects (16 to 23 November 2026), counted from the state files:
+
+- **196** tickets, 53 of them split into parts; **93** became a pull request, 22 of those are merged
+- **76 %** of the pull requests needed at least one rework round (71 of 93)
+- **37 min** agent working time per ticket (median); a quarter took more than 81 min
+- **4.9 million** tokens per ticket (median, cache reads included)
+- **62 of 92** tickets passed every scenario of the judge in their last verdict
+
+What does not work yet is listed under [Status](#status).
 
 ## Quick start
 
@@ -245,6 +270,8 @@ A small Kanban board shows all tickets by their state: intake, planning, impleme
 ```bash
 python3 -m factory board
 ```
+
+<p align="center"><img src="docs/assets/board-kanban-dark.webp" alt="The board with key figures, the tickets that need you and the production line as a Kanban" width="100%"></p>
 
 <table>
   <tr>

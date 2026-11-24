@@ -7,12 +7,37 @@
 Ein GitHub-Issue mit dem Label `factory:go` wird hier zu einem geprüften Pull Request: Agents planen, schreiben und prüfen den Code, ein getrennter Richter prüft das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat. Im Dark-Modus wird der Pull Request danach ohne Menschen gemergt; sonst mergst du von Hand.
 
 <p align="center">
-  <a href="https://hansur94.github.io/software-factory/"><img src="docs/assets/board-kanban-dark.webp" alt="Das Board der Software Factory mit Kennzahlen, wartenden Tickets und dem Fließband" width="100%"></a>
+  <a href="https://hansur94.github.io/software-factory/"><img src="docs/assets/belt-de.svg" alt="Das Fließband: Ein Ticket fällt ein, Roboterarme stempeln, planen, schweißen und siegeln es, und es verlässt das Band als Pull Request" width="100%"></a>
 </p>
 
 <p align="center"><b><a href="https://hansur94.github.io/software-factory/">Projektseite</a></b> · <a href="#schnellstart">Schnellstart</a> · <a href="#board">Board</a> · <a href="CONTRIBUTING.md">Mitmachen</a></p>
 
 > 🇬🇧 **English:** [README.md](README.md)
+
+## Ein echtes Ticket
+
+Kein nachgestelltes Beispiel: Das ist ein Lauf der Factory in einem Testprojekt, einer kleinen To-do-Liste für die Kommandozeile. Das Issue verlangte ein Kommando `todo remove N`. Zeiten und Kosten stammen aus den Dateien dieses Laufs.
+
+| Station | Modell | Dauer | Kosten | Ergebnis |
+|---|---|--:|--:|---|
+| Eingang | Haiku 5.5 | 15 s | 0,004 $ | fester Auftrag, Größe S, 5 Abnahmekriterien |
+| Planer | Fable 5.2 | 63 s | 0,175 $ | 1 Task, 9 Abnahmekriterien, 5 benannte Risiken |
+| Plan-Prüfung | Opus 5.5 | 19 s | 0,165 $ | bestanden, 0 blockierende Punkte |
+| Implementierer | Sonnet 5.5 | 27 s | 0,105 $ | `todo/cli.py` und `tests/test_cli.py` |
+| Checks | – | < 1 s | – | Tests des Projekts grün |
+| Reviewer | Opus 5.5 | 39 s | 0,232 $ | freigegeben, 0 blockierend, 5 Hinweise |
+| Richter | Opus 5.5 | 53 s | 0,294 $ | 6 von 6 verborgenen Szenarien bestanden |
+| **Summe** | | **3 min 37 s** | **0,98 $** | vom Label bis zum Urteil |
+
+Dieses Ticket ist klein. In acht Tagen Betrieb in zwei privaten Projekten (16. bis 23. November 2026), gezählt aus den Zustandsdateien:
+
+- **196** Tickets, 53 davon in Teil-Tickets aufgeteilt; **93** wurden zu einem Pull Request, 22 davon sind gemergt
+- **76 %** der Pull Requests brauchten mindestens eine Nacharbeitsrunde (71 von 93)
+- **37 min** Arbeitszeit der Agents je Ticket (Median); ein Viertel brauchte über 81 min
+- **4,9 Mio.** Tokens je Ticket (Median, Cache-Lesezugriffe mitgezählt)
+- **62 von 92** Tickets bestanden zuletzt alle Szenarien des Richters
+
+Was noch nicht geht, steht unter [Stand](#stand).
 
 ## Schnellstart
 
@@ -245,6 +270,8 @@ Ein kleines Kanban-Board zeigt alle Tickets nach ihrem Stand: Eingang, Planung, 
 ```bash
 python3 -m factory board
 ```
+
+<p align="center"><img src="docs/assets/board-kanban-dark.webp" alt="Das Board mit Kennzahlen, den Tickets, die dich brauchen, und dem Fließband als Kanban" width="100%"></p>
 
 <table>
   <tr>

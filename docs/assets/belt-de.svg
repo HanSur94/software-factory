@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" role="img" aria-label="Das Fließband: Ein Ticket fällt ein, Roboterarme stempeln, planen, schweißen und siegeln es, und es verlässt das Band als Pull Request.">
+<title>Das Fließband: Ein Ticket fällt ein, Roboterarme stempeln, planen, schweißen und siegeln es, und es verlässt das Band als Pull Request.</title>
+<style>
+.pkg { animation: pkgA 14s ease-in-out infinite; }
+.pkg g, .again g { animation: 14s step-end infinite; }
+.pkg .note { animation-name: lnote; } .pkg .stamp { opacity: 0; animation-name: lstamp; } .pkg .bp { opacity: 0; animation-name: lbp; }
+.crate { color: #22d3ee; }
+.pkg .crate { opacity: 0; animation-name: lcrate; } .pkg .seal { opacity: 0; animation-name: lseal; } .pkg .carton { opacity: 0; animation-name: lcarton; }
+@keyframes pkgA { 0% { transform: translate(20px, 150px); opacity: 0; } 3% { opacity: 1; } 7% { transform: translate(20px, 216px); }
+  12%, 20% { transform: translate(74px, 216px); } 27%, 34% { transform: translate(218px, 216px); } 44%, 56% { transform: translate(506px, 216px); }
+  72%, 80% { transform: translate(938px, 216px); } 84%, 91% { transform: translate(1082px, 216px); }
+  96% { transform: translate(1146px, 216px); opacity: 1; } 97% { opacity: 0; } 100% { transform: translate(1146px, 222px); opacity: 0; } }
+@keyframes lnote { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes lstamp { 0% { opacity: 0; } 16% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes lbp { 0% { opacity: 0; } 31% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes lcrate { 0% { opacity: 0; } 50% { opacity: 1; } 87% { opacity: 0; } }
+@keyframes lseal { 0% { opacity: 0; } 76% { opacity: 1; } 98% { opacity: 0; } }
+@keyframes lcarton { 0% { opacity: 0; } 87% { opacity: 1; } 98% { opacity: 0; } }
+.again { opacity: 0; animation: pkgB 28s ease-in-out 9s infinite both; }
+.again .crate { opacity: 1; animation: lbad 28s step-end 9s infinite both; }
+@keyframes pkgB { 0% { transform: translate(506px, 216px); opacity: 0; } 2% { opacity: 1; } 8%, 14% { transform: translate(650px, 216px); }
+  17% { transform: translate(650px, 262px); } 25% { transform: translate(506px, 262px); }
+  28% { transform: translate(506px, 216px); opacity: 1; } 30%, 100% { transform: translate(506px, 216px); opacity: 0; } }
+@keyframes lbad { 0% { color: #22d3ee; } 9% { color: #ff5a4e; } 28% { color: #22d3ee; } }
+.arm { animation: 14s ease-in-out infinite; }
+.a1 { animation-name: arm1; } .a2 { animation-name: arm2; } .a4 { animation-name: arm4; } .a4b { animation-name: arm4b; } .a7 { animation-name: arm7; }
+@keyframes arm1 { 0%, 13%, 19%, 100% { transform: none; } 15%, 17% { transform: translateY(13px); } }
+@keyframes arm2 { 0%, 28%, 34%, 100% { transform: none; } 30%, 32% { transform: translateY(13px); } }
+@keyframes arm4 { 0%, 45%, 55%, 100% { transform: none; } 47%, 53% { transform: translateY(13px); } 49%, 51% { transform: translateY(9px); } }
+@keyframes arm4b { 0%, 45%, 55%, 100% { transform: none; } 47%, 53% { transform: translateY(13px); } 50% { transform: translateY(9px); } }
+@keyframes arm7 { 0%, 73%, 79%, 100% { transform: none; } 75%, 77% { transform: translateY(13px); } }
+.spark { opacity: 0; animation: 14s linear infinite; }
+.s1 { animation-name: sp1; } .s2 { animation-name: sp2; } .s3 { animation-name: sp3; }
+@keyframes sp1 { 0%, 47% { opacity: 0; transform: none; } 48% { opacity: 1; } 51% { opacity: 0; transform: translate(-26px, -20px); } }
+@keyframes sp2 { 0%, 49% { opacity: 0; transform: none; } 50% { opacity: 1; } 53% { opacity: 0; transform: translate(24px, -22px); } }
+@keyframes sp3 { 0%, 48% { opacity: 0; transform: none; } 49% { opacity: 1; } 52% { opacity: 0; transform: translate(4px, -30px); } }
+.ok { animation: lok 14s step-end infinite; } .no { animation: lno 28s step-end 9s infinite both; }
+@keyframes lok { 0% { fill: #3a3a40; } 59% { fill: #5bd68a; } 65% { fill: #3a3a40; } }
+@keyframes lno { 0% { fill: #3a3a40; } 8% { fill: #ff5a4e; } 16% { fill: #3a3a40; } }
+@media (prefers-reduced-motion: reduce) {
+  .pkg, .again, .arm, .spark, .ok, .no, .pkg g, .again g { animation: none !important; }
+  .pkg { transform: translate(506px, 216px); } .pkg .note { opacity: 0; } .pkg .crate { opacity: 1; }
+  .again { opacity: 1; transform: translate(938px, 216px); }
+}
+</style>
+<defs><pattern id="belt" width="32" height="28" patternUnits="userSpaceOnUse"><rect width="16" height="28" fill="#18181b"/><rect x="16" width="16" height="28" fill="#222226"/>
+<animateTransform attributeName="patternTransform" type="translate" from="0 0" to="32 0" dur="1.1s" repeatCount="indefinite"/></pattern></defs>
+<rect x=".5" y=".5" width="1199" height="339" rx="3" fill="#09090a" stroke="#2a2a2f"/>
+<g class="arm a1"><rect x="93" y="126" width="6" height="62" fill="#3a3a40"/><circle cx="96" cy="186" r="6" fill="#18181b" stroke="#3a3a40" stroke-width="3"/><rect x="81.0" y="190" width="30" height="13" rx="2" fill="#dc2626"/></g>
+<g class="arm a2"><rect x="237" y="126" width="6" height="62" fill="#3a3a40"/><circle cx="240" cy="186" r="6" fill="#18181b" stroke="#3a3a40" stroke-width="3"/><rect x="225.0" y="190" width="30" height="13" rx="2" fill="#60a5fa"/></g>
+<g class="arm a4"><rect x="509" y="126" width="6" height="62" fill="#3a3a40"/><circle cx="512" cy="186" r="6" fill="#18181b" stroke="#3a3a40" stroke-width="3"/><rect x="505.0" y="190" width="14" height="13" rx="2" fill="#b9b9c0"/></g>
+<g class="arm a4b"><rect x="541" y="126" width="6" height="62" fill="#3a3a40"/><circle cx="544" cy="186" r="6" fill="#18181b" stroke="#3a3a40" stroke-width="3"/><rect x="537.0" y="190" width="14" height="13" rx="2" fill="#b9b9c0"/></g>
+<g class="arm a7"><rect x="957" y="126" width="6" height="62" fill="#3a3a40"/><circle cx="960" cy="186" r="6" fill="#18181b" stroke="#3a3a40" stroke-width="3"/><rect x="948.0" y="190" width="24" height="13" rx="2" fill="#5bd68a"/></g>
+
+<rect x="30" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="40" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">01</text><text x="96" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Eingang</text><text x="96" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Haiku</text>
+<rect x="174" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="184" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">02</text><text x="240" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Planer</text><text x="240" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Fable</text>
+<rect x="318" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="328" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">03</text><text x="384" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Plan-Prüfung</text><text x="384" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Opus</text>
+<rect x="462" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="472" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">04</text><text x="528" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Implementierer</text><text x="528" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Sonnet</text>
+<rect x="606" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="616" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">05</text><text x="672" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Checks</text><text x="672" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">deine Tests</text>
+<rect x="750" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="760" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">06</text><text x="816" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Reviewer</text><text x="816" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Opus</text>
+<rect x="894" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#5bd68a"/><text x="904" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">07</text><text x="960" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Richter</text><text x="960" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">verborgene Tests</text>
+<rect x="1038" y="34" width="132" height="92" rx="2" fill="#121214" stroke="#2a2a2f"/><text x="1048" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#8e8e96">08</text><text x="1104" y="88" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f2f4">Auslieferung</text><text x="1104" y="108" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8e8e96">Pull Request</text>
+<rect x="16" y="250" width="1168" height="28" rx="14" fill="url(#belt)" stroke="#3a3a40" stroke-width="2"/>
+<rect x="500" y="296" width="200" height="14" rx="7" fill="#18181b" stroke="#3a3a40" stroke-width="2"/>
+<text x="600.0" y="328" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#f97316">Nacharbeit</text>
+<path d="M14 150v52a8 8 0 0 0 8 8h36a8 8 0 0 0 8-8v-52" fill="#121214" stroke="#3a3a40" stroke-width="2"/>
+<text x="16" y="304" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="600" fill="#ffb020">↑ factory:go</text>
+<g class="pkg"><g class="note"><rect x="1" y="1" width="42" height="32" rx="3" fill="#fffbea" stroke="#d4a72c"/><path d="M1.5 11V4.500a3 3 0 0 1 3-3h35a3 3 0 0 1 3 3V11z" fill="#fcd34d"/><circle cx="8" cy="6.400" r="2.500" fill="none" stroke="#15803d" stroke-width="1.500"/><text x="14" y="9" font-family="monospace" font-size="7" font-weight="700" fill="#713f12">#12</text><rect x="6" y="15.500" width="26" height="2.400" rx="1.200" fill="#cdb46c"/><rect x="6" y="21" width="32" height="2.400" rx="1.200" fill="#cdb46c"/><rect x="6" y="26.500" width="17" height="2.400" rx="1.200" fill="#cdb46c"/></g><g class="bp"><g transform="rotate(4 28 12)"><rect x="12" y="-4" width="33" height="22" rx="2" fill="#2563eb" stroke="#1e3a8a"/><path d="M12 3.500h33M12 10.500h33M20 -4v22M29 -4v22M38 -4v22" stroke="#93c5fd" stroke-width=".5" opacity=".7"/><path d="M17 13V2h9v5h8v6z" fill="none" stroke="#fff" stroke-width="1.300" stroke-linejoin="round"/></g></g><g class="stamp"><g transform="rotate(-12 31 24)"><rect x="21.500" y="18" width="20" height="11" rx="2" fill="#fffbea" stroke="#dc2626" stroke-width="1.800"/><text x="31.500" y="26.300" text-anchor="middle" font-family="monospace" font-size="7.500" font-weight="700" fill="#dc2626">GO</text></g></g><g class="crate"><rect x="1.500" y="1.500" width="41" height="31" rx="3" fill="#0f172a" stroke="currentColor" stroke-width="2"/><rect x="7" y="8" width="11" height="3" rx="1.500" fill="#22d3ee"/><rect x="20" y="8" width="9" height="3" rx="1.500" fill="#a78bfa"/><rect x="11" y="15.500" width="19" height="3" rx="1.500" fill="#4ade80"/><rect x="11" y="23" width="8" height="3" rx="1.500" fill="#fbbf24"/><rect x="21" y="23" width="13" height="3" rx="1.500" fill="#22d3ee"/></g><g class="carton"><rect x="1" y="5" width="42" height="28" rx="2" fill="#c9935a" stroke="#8a5a2b"/><rect x="1.500" y="5.500" width="41" height="6.500" fill="#b07d45"/><rect x="18.500" y="5.500" width="7" height="27" fill="#ecd3ae"/><rect x="27" y="17" width="13" height="10" rx="1.500" fill="#fff"/><text x="33.500" y="24.600" text-anchor="middle" font-family="monospace" font-size="6.500" font-weight="700" fill="#6b4423">PR</text></g><g class="seal"><g transform="translate(34 -8)"><circle cx="9" cy="9" r="8" fill="#22c55e" stroke="#09090a" stroke-width="1.500"/><path d="M5.200 9.300l2.600 2.600 5-5.400" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></g></g>
+<g class="again"><g class="crate"><rect x="1.500" y="1.500" width="41" height="31" rx="3" fill="#0f172a" stroke="currentColor" stroke-width="2"/><rect x="7" y="8" width="11" height="3" rx="1.500" fill="#22d3ee"/><rect x="20" y="8" width="9" height="3" rx="1.500" fill="#a78bfa"/><rect x="11" y="15.500" width="19" height="3" rx="1.500" fill="#4ade80"/><rect x="11" y="23" width="8" height="3" rx="1.500" fill="#fbbf24"/><rect x="21" y="23" width="13" height="3" rx="1.500" fill="#22d3ee"/></g></g>
+<text class="spark s1" x="528" y="212" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#fbbf24">{</text>
+<text class="spark s2" x="528" y="212" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#fbbf24">}</text>
+<text class="spark s3" x="528" y="212" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#fbbf24">;</text>
+<path d="M642 250v-44a8 8 0 0 1 8-8h44a8 8 0 0 1 8 8v44" fill="none" stroke="#3a3a40" stroke-width="3"/>
+<circle class="ok" cx="656" cy="198" r="6" fill="#3a3a40" stroke="#09090a" stroke-width="2"/><circle class="no" cx="688" cy="198" r="6" fill="#3a3a40" stroke="#09090a" stroke-width="2"/>
+<path d="M1140 216v38a6 6 0 0 0 6 6h40a6 6 0 0 0 6-6v-38" fill="rgba(91,214,138,.12)" stroke="#5bd68a" stroke-width="2"/>
+<text x="1166" y="304" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="600" fill="#5bd68a">main</text>
+</svg>
