@@ -251,7 +251,7 @@ python3 -m factory board
     <td width="50%"><img src="docs/assets/ticket-dark.webp" alt="Ein geöffnetes Ticket mit dem Ablauf seiner Stationen"><br><sub><b>Ticket:</b> jeder Schritt mit Modell und Dauer</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/assets/flow-timetable-light.webp" alt="Fahrplan: jedes Ticket auf einer Zeitachse"><br><sub><b>Fahrplan:</b> wohin die Zeit ging</sub></td>
+    <td width="50%"><img src="docs/assets/flow-timetable-dark.webp" alt="Fahrplan: jedes Ticket auf einer Zeitachse"><br><sub><b>Fahrplan:</b> wohin die Zeit ging</sub></td>
     <td width="50%"><img src="docs/assets/flow-line-dark.webp" alt="Linie: die Stationen als Abschnitte der Halle"><br><sub><b>Linie:</b> das Band von der Seite</sub></td>
   </tr>
 </table>
