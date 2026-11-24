@@ -1,8 +1,15 @@
-# Software Factory
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo-light.svg" alt="Software Factory" width="420">
+  </picture>
+</h1>
 
-[![selftest](https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml/badge.svg)](https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
+<p align="center">
+  <a href="https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml"><img src="https://github.com/HanSur94/software-factory/actions/workflows/selftest.yml/badge.svg" alt="selftest"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
+</p>
 
 Ein GitHub-Issue mit dem Label `factory:go` wird hier zu einem geprüften Pull Request: Agents planen, schreiben und prüfen den Code, ein getrennter Richter prüft das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat. Im Dark-Modus wird der Pull Request danach ohne Menschen gemergt; sonst mergst du von Hand.
 
