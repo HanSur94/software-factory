@@ -104,7 +104,7 @@ header.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
   color: var(--run); border: 1px solid color-mix(in srgb, var(--run) 40%, transparent); background: var(--run-soft); padding: 9px 14px; border-radius: 999px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 0 currentColor; animation: pulse 2s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent); } 80%, 100% { box-shadow: 0 0 0 8px transparent; } }
-h1 { font: 700 clamp(38px, 6.4vw, 76px)/1.04 var(--sans); letter-spacing: -.035em; margin: 26px auto 0; max-width: 15ch; text-wrap: balance; }
+h1 { font: 700 clamp(38px, 6.4vw, 76px)/1.04 var(--sans); letter-spacing: -.035em; margin: 0 auto; max-width: 15ch; text-wrap: balance; }
 h1 .hl { background: linear-gradient(90deg, var(--run), #60a5fa 55%, var(--pr)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lead { font-size: clamp(18px, 2.1vw, 21px); color: var(--fg-2); max-width: 60ch; margin: 22px auto 0; text-wrap: pretty; }
 .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
@@ -114,7 +114,8 @@ h1 .hl { background: linear-gradient(90deg, var(--run), #60a5fa 55%, var(--pr));
 .btn.primary { background: var(--run); color: var(--on-run); border-color: var(--run); }
 .btn.primary:hover { background: color-mix(in srgb, var(--run) 86%, #fff); }
 .btn svg { width: 18px; height: 18px; }
-.facts { display: flex; gap: 10px 26px; justify-content: center; flex-wrap: wrap; margin-top: 30px; color: var(--muted); font: 400 14px/1.4 var(--mono); }
+.eyebrow { margin-top: 30px; }
+.facts { display: flex; gap: 10px 26px; justify-content: center; flex-wrap: wrap; margin-top: 18px; color: var(--muted); font: 400 14px/1.4 var(--mono); }
 .facts span { display: inline-flex; align-items: center; gap: 8px; }
 .facts b { color: var(--fg-2); font-weight: 600; }
 
@@ -344,13 +345,13 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
 
 <main id="main">
   <div class="wrap hero" id="top">
-    <span class="eyebrow" data-en="&lt;span class=&quot;dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;Open source · MIT"><span class="dot" aria-hidden="true"></span>Open Source · MIT</span>
     <h1 data-en="The factory for &lt;span class=&quot;hl&quot;&gt;reviewed code&lt;/span&gt;">Die Fabrik für <span class="hl">geprüften Code</span></h1>
     <p class="lead" data-en="Issue in, pull request out. In between, Claude agents plan, build and review the code on a production line, and a separate judge tests it against scenarios the implementer never saw.">Issue rein, Pull Request raus. Dazwischen planen, bauen und prüfen Claude-Agents den Code am Fließband, und ein getrennter Richter testet ihn gegen Szenarien, die der Implementierer nie gesehen hat.</p>
     <div class="ctas">
       <a class="btn primary" href="#start" data-en="&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-terminal&quot;/&gt;&lt;/svg&gt;Quick start"><svg aria-hidden="true"><use href="#i-terminal"/></svg>Schnellstart</a>
       <a class="btn" href="https://github.com/HanSur94/software-factory" data-en="&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-gh&quot;/&gt;&lt;/svg&gt;View the code"><svg aria-hidden="true"><use href="#i-gh"/></svg>Code ansehen</a>
     </div>
+    <span class="eyebrow" data-en="&lt;span class=&quot;dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;Open source · MIT"><span class="dot" aria-hidden="true"></span>Open Source · MIT</span>
     <div class="facts">
       <span data-en="&lt;b&gt;8&lt;/b&gt; stations"><b>8</b> Stationen</span>
       <span data-en="&lt;b&gt;1&lt;/b&gt; control script, no agent at the wheel"><b>1</b> Steuerskript, kein Agent am Steuer</span>
