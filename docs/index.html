@@ -156,7 +156,10 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
 .st-btn { display: block; width: 100%; height: 100%; padding: 30px 8px 14px; background: none; border: 0; border-radius: 12px; color: inherit; font: inherit; text-align: inherit; cursor: pointer; }
 .st:hover { border-color: var(--run); transform: translateY(-2px); }
 .st.on { border-color: var(--run); box-shadow: 0 0 0 1px var(--run), 0 10px 30px -12px color-mix(in srgb, var(--run) 60%, transparent); }
-.st-detail { margin-top: 18px; background: var(--card); border: 1px solid var(--run); border-radius: 14px; padding: 22px 24px; }
+.st-detail { position: relative; margin-top: 18px; background: var(--card); border: 1px solid var(--run); border-radius: 14px; padding: 22px 24px; }
+/* wide: a notch points up to the chosen station, so the panel reads as its extension */
+.st-detail::before { content: ""; position: absolute; top: -9px; left: var(--px, 50%); width: 16px; height: 16px; margin-left: -8px; background: var(--card);
+  border-left: 1px solid var(--run); border-top: 1px solid var(--run); transform: rotate(45deg); }
 .st-detail .hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .st-detail h3 { font: 600 20px/1.3 var(--sans); margin: 0; }
 .st-detail .model { font: 500 12.5px/1 var(--mono); color: var(--run); background: var(--run-soft); border-radius: 6px; padding: 6px 9px; }
@@ -194,10 +197,15 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
   @keyframes ride-down { 0% { top: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); } 100% { top: 100%; } }
   .st { text-align: left; }
   .st:hover { transform: none; }
-  .st-btn { display: grid; grid-template-columns: 50px 1fr; gap: 0 14px; align-items: center; padding: 14px; }
+  .st-btn { display: grid; grid-template-columns: 50px 1fr; gap: 0 14px; align-items: center; padding: 14px; height: auto; }
   .belt::after { display: none; }
-  .st-detail { margin: 0; }
-  .st::after { left: -34px; bottom: auto; top: 50%; width: 34px; height: 14px; transform: translateY(-50%);
+  /* narrow: the station tile itself opens; no tile of its own */
+  .st .st-detail { margin: 0; border: 0; border-radius: 0 0 12px 12px; background: transparent; padding: 0 14px 16px 78px; animation: open .25s ease; }
+  .st .st-detail::before, .st .st-detail .hd { display: none; }
+  .st .st-detail dl { grid-template-columns: 1fr; margin-top: 4px; }
+  .st .st-detail p { font: 400 15.5px/1.55 var(--sans); color: var(--fg-2); margin-top: 12px; }
+  @keyframes open { from { opacity: 0; transform: translateY(-4px); } }
+  .st::after { left: -34px; bottom: auto; top: 40px; width: 34px; height: 14px; transform: translateY(-50%);
     background: linear-gradient(180deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
   .st .num { position: static; grid-column: 2; grid-row: 1; margin-bottom: 4px; }
   .st .node { grid-row: 1 / span 2; margin: 0; }
@@ -603,8 +611,12 @@ function drawDetail() {
   });
   // narrow: right under the station; wide: under the whole line
   const card = document.querySelector(`.st-btn[data-i="${openSt}"]`).parentElement;
-  if (narrow.matches) card.after(detail); else factory.after(detail);
+  if (narrow.matches) card.append(detail); else factory.after(detail);
   detail.hidden = false;
+  if (!narrow.matches) {
+    const c = card.getBoundingClientRect(), d = detail.getBoundingClientRect();
+    detail.style.setProperty("--px", Math.round(c.left + c.width / 2 - d.left) + "px");
+  }
 }
 document.querySelectorAll(".st-btn").forEach(b => b.addEventListener("click", () => {
   openSt = openSt === Number(b.dataset.i) ? -1 : Number(b.dataset.i); drawDetail();
