@@ -4,145 +4,145 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
 
-Ein GitHub-Issue mit dem Label `factory:go` wird hier zu einem geprüften Pull Request: Agents planen, schreiben und prüfen den Code, ein getrennter Richter prüft das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat. Im Dark-Modus wird der Pull Request danach ohne Menschen gemergt; sonst mergst du von Hand.
+A GitHub issue with the label `factory:go` becomes a reviewed pull request here: agents plan, write and review the code, and a separate judge tests the result against scenarios the implementer never saw. In dark mode the pull request is then merged without a human; otherwise you merge by hand.
 
 <p align="center">
-  <a href="https://hansur94.github.io/software-factory/"><img src="docs/assets/board-kanban-dark.webp" alt="Das Board der Software Factory mit Kennzahlen, wartenden Tickets und dem Fließband" width="100%"></a>
+  <a href="https://hansur94.github.io/software-factory/?lang=en"><img src="docs/assets/board-kanban-dark.webp" alt="The Software Factory board with key figures, waiting tickets and the production line" width="100%"></a>
 </p>
 
-<p align="center"><b><a href="https://hansur94.github.io/software-factory/">Projektseite</a></b> · <a href="#schnellstart">Schnellstart</a> · <a href="#board">Board</a> · <a href="CONTRIBUTING.md">Mitmachen</a></p>
+<p align="center"><b><a href="https://hansur94.github.io/software-factory/?lang=en">Project page</a></b> · <a href="#quick-start">Quick start</a> · <a href="#board">Board</a> · <a href="CONTRIBUTING.md">Contributing</a> · <a href="README.de.md">Deutsch</a></p>
 
-> **In English:** Software Factory turns a GitHub issue labelled `factory:go` into a reviewed pull request. Claude agents plan, implement and review the change in fixed stations, driven by a plain Python script rather than by an agent. A separate judge then tests the result against hidden scenarios the implementer never saw. A local board shows every ticket on a production line. It runs on GitHub Actions (hosted or self-hosted runners) or locally. The documentation below is in German.
+> **Language:** The board, the settings page and the comments the factory writes on issues are in German. The station prompts are in English. This README names the German labels where you need them to find a button. `CONTRIBUTING.md` and `SECURITY.md` are in German too.
 
-## Schnellstart
+## Quick start
 
-Du brauchst:
+You need:
 
-- Python 3.12 und `pip install -r requirements.txt`
-- die [GitHub CLI](https://cli.github.com/) `gh`, angemeldet mit `gh auth login`
-- [Claude Code](https://claude.com/claude-code) und einem Claude-Abo; auf GitHub als Secret `CLAUDE_CODE_OAUTH_TOKEN` aus `claude setup-token`
+- Python 3.12 and `pip install -r requirements.txt`
+- the [GitHub CLI](https://cli.github.com/) `gh`, signed in with `gh auth login`
+- [Claude Code](https://claude.com/claude-code) and a Claude subscription; on GitHub as the secret `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`
 
 ```bash
 git clone https://github.com/HanSur94/software-factory.git
 cd software-factory
 pip install -r requirements.txt
-python3 -m factory board          # Board und Einstellungen unter http://127.0.0.1:8787
+python3 -m factory board          # board and settings at http://127.0.0.1:8787
 ```
 
-Im Board „+ Projekt verbinden“ wählen (siehe [Ein Projekt anbinden](#ein-projekt-anbinden)), dann an einem Issue das Label `factory:go` setzen. Ohne GitHub geht es auch: [Lokal laufen lassen](#lokal-laufen-lassen).
+On the board choose "+ Projekt verbinden" (connect project, see [Connecting a project](#connecting-a-project)), then set the label `factory:go` on an issue. It also works without GitHub: [Running locally](#running-locally).
 
-## Ablauf eines Tickets
+## How a ticket flows
 
-| Station | Wer | Liest | Schreibt |
+| Station | Who | Reads | Writes |
 |---|---|---|---|
-| Eingang | Haiku 5.5 | Issue | `ticket.json` mit festem Auftrag, oder eine Rückfrage im Issue |
-| Planer | Fable 5.2 | Ticket, Repo | `plan.md`: Tasks mit Abnahmekriterien |
-| Plan-Prüfung | Opus 5.5 | Ticket, Plan | `plan-review.json` |
-| Implementierer | Sonnet 5.5 | einen Task | Code und Tests; unabhängige Tasks gleichzeitig, jeder im eigenen Ordner |
-| Checks | Kommandos des Projekts | den Branch | Ergebnis; bei Fehlern fasst Haiku 5.5 die Logs zusammen |
-| Reviewer | Opus 5.5 | Diff, Ticket, Plan | `review.md` |
-| Richter | Opus 5.5 | gebauten Stand, Szenarien-Repo | `verdict.json`: Wert und Fehlerbild, nie der Szenario-Text |
-| Auslieferung | Skript | Verdict | Pull Request und im Dark-Modus der Merge, oder die nächste Runde |
+| Intake | Haiku 5.5 | the issue | `ticket.json` with a fixed mandate, or a question in the issue |
+| Planner | Fable 5.2 | ticket, repo | `plan.md`: tasks with acceptance criteria |
+| Plan check | Opus 5.5 | ticket, plan | `plan-review.json` |
+| Implementer | Sonnet 5.5 | one task | code and tests; independent tasks at the same time, each in its own folder |
+| Checks | the project's commands | the branch | the result; on failure Haiku 5.5 sums up the logs |
+| Reviewer | Opus 5.5 | diff, ticket, plan | `review.md` |
+| Judge | Opus 5.5 | the built state, the scenario repo | `verdict.json`: score and failure, never the scenario text |
+| Delivery | script | the verdict | the pull request and, in dark mode, the merge; or the next round |
 
-Jede Station startet mit frischem Kontext und sieht nur die Dateien ihrer Vorgänger. Gesteuert wird von einem normalen Skript (`factory/pipeline.py`), nicht von einem Agent: Es führt die Stationen in fester Reihenfolge aus, zählt Runden und Budget und hält an einem Limit an.
+Every station starts with fresh context and sees only the files of the stations before it. A plain script (`factory/pipeline.py`) is in charge, not an agent: it runs the stations in a fixed order, counts rounds and budget, and stops at a limit.
 
-### Parallele Arbeiter
+### Parallel workers
 
-Tasks eines Plans, die nicht voneinander abhängen und verschiedene Dateien anfassen, laufen gleichzeitig. Jeder Arbeiter bekommt dafür einen eigenen Ordner: einen Git-Worktree `wt-<ticket>-<task>` auf einem eigenen Branch, der vom Stand des Ticket-Branches startet. Die Arbeiter sehen einander nicht.
+Tasks of a plan that do not depend on each other and touch different files run at the same time. Each worker gets its own folder: a git worktree `wt-<ticket>-<task>` on its own branch, starting from the state of the ticket branch. The workers do not see each other.
 
-Was zusammen laufen darf, entscheidet das Steuerskript und kein Agent. Es liest dazu `depends_on` und `files` der Tasks im Plan:
+The control script decides what may run together, not an agent. It reads `depends_on` and `files` of the tasks in the plan:
 
-- Ein Task startet erst, wenn alles fertig ist, wovon er abhängt.
-- Zwei Tasks, die dieselbe Datei oder denselben Ordner nennen, laufen nicht in derselben Welle.
-- Ein Task ohne `files` läuft allein.
-- Mehr als `pipeline.parallel_tasks` Arbeiter (Standard 3) laufen nie gleichzeitig; mit 1 läuft alles nacheinander.
+- A task starts only when everything it depends on is done.
+- Two tasks that name the same file or folder do not run in the same wave.
+- A task without `files` runs alone.
+- Never more than `pipeline.parallel_tasks` workers (default 3) run at once; with 1 everything runs one after another.
 
-Sind die Arbeiter einer Welle fertig, setzt das Skript ihre Commits nacheinander auf den Ticket-Branch und löscht die Ordner. Passt ein Commit nicht auf die anderen, wird er verworfen und sein Task läuft noch einmal im Ordner des Tickets, wo er sieht, was die anderen gebaut haben. Checks, Review und Richter prüfen wie bisher den zusammengeführten Stand. Das Restbudget des Tickets wird unter den Arbeitern einer Welle aufgeteilt. Fällt ein Arbeiter aus, hält das Ticket an; was die anderen fertig haben, bleibt erhalten.
+When the workers of a wave are done, the script puts their commits onto the ticket branch one by one and deletes the folders. If a commit does not fit onto the others, it is discarded and its task runs again in the ticket's folder, where it sees what the others built. Checks, review and judge test the merged state as before. The remaining budget of the ticket is split among the workers of a wave. If one worker fails, the ticket stops; what the others finished is kept.
 
-Parallele Arbeiter verkürzen den Durchlauf. Kosten sparen sie nicht, und das Abo-Kontingent verbrauchen sie schneller.
+Parallel workers shorten the lead time. They do not save cost, and they use up the subscription quota faster.
 
-Auf GitHub sind das vier Jobs mit unterschiedlichen Rechten (`.github/workflows/run-ticket.yml`):
+On GitHub these are four jobs with different permissions (`.github/workflows/run-ticket.yml`):
 
-- `route` liest das Projektprofil und wählt die Runner
-- `work` läuft von Eingang bis Review und pusht den Ticket-Branch
-- `judge` ist der einzige Job, der das Szenarien-Repo sieht; nur `verdict.json` verlässt ihn
-- `deliver` öffnet den Pull Request oder startet die nächste Runde
+- `route` reads the project profile and picks the runners
+- `work` runs from intake to review and pushes the ticket branch
+- `judge` is the only job that sees the scenario repo; only `verdict.json` leaves it
+- `deliver` opens the pull request or starts the next round
 
-## Aufbau
+## Layout
 
 ```
-factory.yaml          alles Wählbare: Modelle, Reihenfolge, Schwellen, Limits, Runner
-contracts/            Schemas der Vertragsdateien, je mit Versionsnummer
-stations/             ein Prompt je Station
-factory/              das Steuerskript
-  pipeline.py           Reihenfolge, Schleifen, Budget, Parken
-  stations.py           Station ausführen, Vertragsdatei prüfen
-  agent.py              der ausführende Agent: Umgebung, Zeitlimit, Mitschnitt, Ergebnis
-  harness/              je Agent-CLI ein Adapter (heute claude.py für Claude Code)
-  hosts.py              Ticketsystem und Code-Host: GitHub oder lokale Dateien
-  state.py              Zustand: Branch im Produkt-Repo oder lokaler Ordner
-  judge.py, deliver.py  Richter und Auslieferung
-  report.py             Kennzahlen aus dem Ereignisprotokoll
-  board.py, board.html  Kanban-Board im Browser
-  theme.css, theme.js   gemeinsames Aussehen von Board und Einstellungsseite, hell/dunkel/auto
-action.yml            bringt den Code dieses Repos in die Jobs der Produkt-Repos
-templates/product/    was ein Produkt-Repo braucht: Workflow, Profil, Issue-Vorlage
-plugin/               interaktive Station: Skill factory-handoff
-tests/                Vertragstests und der ganze Ablauf als Trockenlauf
+factory.yaml          everything you can choose: models, order, thresholds, limits, runners
+contracts/            schemas of the contract files, each with a version number
+stations/             one prompt per station
+factory/              the control script
+  pipeline.py           order, loops, budget, parking
+  stations.py           run a station, check its contract file
+  agent.py              the running agent: environment, time limit, transcript, result
+  harness/              one adapter per agent CLI (today claude.py for Claude Code)
+  hosts.py              ticket system and code host: GitHub or local files
+  state.py              state: a branch in the product repo or a local folder
+  judge.py, deliver.py  judge and delivery
+  report.py             key figures from the event log
+  board.py, board.html  the Kanban board in the browser
+  theme.css, theme.js   shared look of board and settings page, light/dark/auto
+action.yml            brings this repo's code into the jobs of the product repos
+templates/product/    what a product repo needs: workflow, profile, issue template
+plugin/               interactive station: the skill factory-handoff
+tests/                contract tests and the whole flow as a dry run
 ```
 
-Teilsysteme sprechen nur über Vertragsdateien miteinander. Ein Teil wird ausgetauscht, indem man seine Datei ersetzt und die Tests laufen lässt.
+Subsystems talk to each other only through contract files. You swap a part by replacing its file and running the tests.
 
-## Konfiguration
+## Configuration
 
-Drei Schichten bestimmen, wie die Factory arbeitet; jede überschreibt die davor:
+Three layers decide how the factory works; each overrides the one before:
 
-1. `factory.yaml`: die dokumentierten Standardwerte
-2. `settings.yaml`: was du für alle Projekte geändert hast, geschrieben von der Einstellungsseite
-3. Abschnitt `overrides` im Profil eines Projekts: was nur dort anders ist
+1. `factory.yaml`: the documented defaults
+2. `settings.yaml`: what you changed for all projects, written by the settings page
+3. the `overrides` section in a project's profile: what differs only there
 
-Das Ergebnis wird vor jedem Lauf gegen `contracts/config.schema.json` geprüft. Ein falscher Wert hält den Lauf mit einer Meldung an, die den Schlüssel nennt.
+The result is checked against `contracts/config.schema.json` before every run. A wrong value stops the run with a message that names the key.
 
-### Einstellungsseite
+### Settings page
 
 ```bash
 python3 -m factory board
 ```
 
-Danach `http://127.0.0.1:8787/settings` öffnen (oder im Board oben rechts auf „Einstellungen“ klicken). Oben wählst du, wofür die Werte gelten:
+Then open `http://127.0.0.1:8787/settings` (or click "Einstellungen" at the top right of the board). At the top you choose what the values apply to:
 
-- **Alle Projekte:** Speichern schreibt `settings.yaml`, und zwar nur, was von `factory.yaml` abweicht. Lokale Läufe nutzen die Werte sofort. Die Läufe auf GitHub lesen die Factory von `main`, deshalb committet und pusht „Speichern und veröffentlichen“ die Datei gleich mit. Was nur deinen Rechner betrifft, also die Projekte des Boards (`board.repos`, `board.local`) und die Maschinenüberwachung (`machine`), landet in `settings.local.yaml`. Git ignoriert diese Datei, damit deine Projektliste nicht mit der Factory veröffentlicht wird.
-- **Ein Projekt:** Speichern schreibt den Abschnitt `overrides` in `.factory/profile.yaml` als Commit auf den Standard-Branch des Projekts. Leere Felder übernehmen den Wert für alle Projekte. Die Seite zeigt dort auch die Checks des Projekts und ob die beiden Zugänge (Secrets) gesetzt sind; eintragen musst du sie selbst.
+- **All projects ("Alle Projekte"):** Saving writes `settings.yaml`, and only what differs from `factory.yaml`. Local runs use the values at once. Runs on GitHub read the factory from `main`, so "Speichern und veröffentlichen" (save and publish) commits and pushes the file as well. What concerns only your machine, that is the board's projects (`board.repos`, `board.local`) and the machine monitoring (`machine`), goes into `settings.local.yaml`. Git ignores that file so that your project list is not published with the factory.
+- **One project:** Saving writes the `overrides` section in `.factory/profile.yaml` as a commit on the project's default branch. Empty fields take the value for all projects. The page also shows the project's checks there and whether the two credentials (secrets) are set; you have to enter them yourself.
 
-Einstellbar sind der Ablauf (beratend, blockierend oder aus je Station, Zahl der Runden), die Auslieferung samt Regeln für das automatische Mergen, Schwellen und Budgets, je Station Modell, Effort, Budget, Zeitlimit, Ersatzmodell und Skills, die Runner, die Skill-Packs und das Board. Der Schalter **Dark-Modus** setzt die vier Werte auf einmal. Für alles ohne eigenes Feld gibt es unter „Erweitert“ `settings.yaml` als Text.
+You can set the flow (advisory, blocking or off per station, number of rounds), delivery including the rules for automatic merging, thresholds and budgets, per station the model, effort, budget, time limit, fallback model and skills, the runners, the skill packs and the board. The switch **Dark-Modus** sets the four values at once. For everything without a field of its own, "Erweitert" (advanced) offers `settings.yaml` as text.
 
-Die Seite ist die einzige Stelle des Boards, die schreibt. Sie nimmt nur Anfragen an, die von ihr selbst auf diesem Rechner kommen.
+The page is the only part of the board that writes. It accepts only requests that come from itself on this machine.
 
-### Von Hand
+### By hand
 
-Dieselben Werte lassen sich in den Dateien ändern. Die häufigsten Handgriffe:
+The same values can be changed in the files. The most common moves:
 
-- **Modell einer Rolle ändern:** die Zeile `model` unter `roles.<rolle>`.
-- **Station scharf schalten:** `pipeline.modes`. `advisory` berichtet nur, `gate` blockiert und schickt zurück, `off` überspringt. Am Anfang sind Plan-Prüfung, Review und Richter beratend; `python3 -m factory report` zeigt, ab wann eine Station oft genug mit deinem Urteil übereinstimmt.
-- **Runner tauschen:** `runtime.capabilities` sagt, wo eine Fähigkeit läuft. Ein Projekt nennt in seinem Profil nur die Fähigkeit (`runtime: { work: unity }`).
-- **Für ein Projekt abweichen:** Abschnitt `overrides` im Profil des Projekts.
-- **Agent-CLI wählen:** `agent.harness` für alle Stationen, `roles.<rolle>.harness` für eine einzelne (auch auf der Einstellungsseite, je Station). Heute gibt es nur `claude` (Claude Code).
+- **Change the model of a role:** the line `model` under `roles.<role>`.
+- **Arm a station:** `pipeline.modes`. `advisory` only reports, `gate` blocks and sends back, `off` skips. At the start plan check, review and judge are advisory; `python3 -m factory report` shows from when a station agrees with your verdict often enough.
+- **Swap runners:** `runtime.capabilities` says where a capability runs. A project names only the capability in its profile (`runtime: { work: unity }`).
+- **Differ for one project:** the `overrides` section in the project's profile.
+- **Choose the agent CLI:** `agent.harness` for all stations, `roles.<role>.harness` for a single one (also on the settings page, per station). Today there is only `claude` (Claude Code).
 
-Budget, Satisfaction-Schwelle und die Regel für das Scharfschalten sind Beispielwerte.
+Budget, satisfaction threshold and the rule for arming are example values.
 
 ### Harnesses
 
-Eine Station braucht vom Agent nur: Prompt in einem Ordner ausführen, Ergebnis und Kosten melden. Was ein CLI dafür aufruft und ausgibt, steht in einem Adapter unter `factory/harness/`. Ein Adapter baut den Aufruf (`argv`), liest die Ausgabe Zeile für Zeile in neutrale Ereignisse (`text`, `tool`, `result`) und sagt in `capabilities`, was das CLI selbst kann: Budget-Grenze, Ersatzmodell, Effort, Befehls-Freigaben, Plugins, Skill-Tool, Kostenangabe. Zeitlimit, bereinigte Umgebung, Sitzungsprotokoll und Verträge bleiben in `agent.py` und gelten für jeden Adapter gleich.
+A station needs only this from the agent: run a prompt in a folder, report result and cost. What a CLI calls and prints for that is written in an adapter under `factory/harness/`. An adapter builds the call (`argv`), reads the output line by line into neutral events (`text`, `tool`, `result`) and says in `capabilities` what the CLI can do itself: budget limit, fallback model, effort, command allowlists, plugins, skill tool, cost reporting. Time limit, cleaned environment, session log and contracts stay in `agent.py` and apply to every adapter alike.
 
-Auf GitHub installiert jeder Job die CLIs der Harnesses, in denen seine Stationen laufen; der Richter-Job nur das des Richters. Die Version setzt `agent.versions.<harness>`, für den Standard-Harness auch `agent.version`, sonst `latest`.
+On GitHub every job installs the CLIs of the harnesses its stations run in; the judge job only the judge's. `agent.versions.<harness>` sets the version, for the default harness also `agent.version`, otherwise `latest`.
 
-Ein Harness ohne Befehls-Freigaben läuft nur auf einem Sandbox-Runner (`FACTORY_SANDBOXED=1`); sonst hält die Station mit einer Meldung an. Welche Secrets ein Projekt braucht, ergibt sich aus den Harnesses, in denen seine Stationen laufen.
+A harness without command allowlists runs only on a sandbox runner (`FACTORY_SANDBOXED=1`); otherwise the station stops with a message. Which secrets a project needs follows from the harnesses its stations run in.
 
-Ein neuer Harness ist ein Modul neben `claude.py` und eine Zeile in `factory/harness/__init__.py`.
+A new harness is one module next to `claude.py` and one line in `factory/harness/__init__.py`.
 
-## Dark-Modus
+## Dark mode
 
-Ein Projekt wird dark, indem sein Profil die Prüfstationen zu Toren macht und den Auto-Merge einschaltet:
+A project goes dark when its profile turns the checking stations into gates and switches on auto-merge:
 
 ```yaml
 overrides:
@@ -152,20 +152,20 @@ overrides:
     auto_merge: true
 ```
 
-Gemergt wird dann ohne Menschen, aber nur, wenn alle Regeln erfüllt sind (`delivery.auto_merge_rules` in `factory.yaml`):
+Merging then happens without a human, but only if all rules are met (`delivery.auto_merge_rules` in `factory.yaml`):
 
-- die Checks sind grün, das Review hat freigegeben, der Richter hat bestanden
-- der Richter hatte mindestens 3 Szenarien
-- die Änderung umfasst höchstens 200 Zeilen
-- das Ticket ist nicht als sensibel markiert
-- die Änderung hat keine geschützten Pfade angefasst
-- der Branch enthält den aktuellen Basis-Branch; hat sich dieser inzwischen bewegt, wird er eingearbeitet und die Checks laufen erneut
+- the checks are green, the review approved, the judge passed
+- the judge had at least 3 scenarios
+- the change is at most 200 lines
+- the ticket is not marked as sensitive
+- the change touched no protected paths
+- the branch contains the current base branch; if the base has moved in the meantime, it is brought in and the checks run again
 
-Ist eine Regel nicht erfüllt, bleibt der Pull Request offen, und der Kommentar am Issue nennt den Grund. Neue Projekte starten ohne Auto-Merge.
+If a rule is not met, the pull request stays open and the comment on the issue names the reason. New projects start without auto-merge.
 
-## Mehr Autonomie
+## More autonomy
 
-Drei Schalter lassen die Factory mehr allein machen. Zusammen sieht das im Profil so aus:
+Three switches let the factory do more on its own. Together they look like this in the profile:
 
 ```yaml
 overrides:
@@ -179,67 +179,68 @@ overrides:
     auto_merge_rules: { require_judge: false, allow_assumptions: true }
 ```
 
-- **Annahmen statt Rückfragen** (`pipeline.questions: assume`): Intake und Planer entscheiden offene Punkte selbst, nehmen die Lesart, die sich später am leichtesten ändern lässt, und schreiben jede Annahme in einen Kommentar am Issue und in den Pull Request („Annahmen, bitte prüfen“). Angehalten wird nur noch für das, was nur du liefern kannst: ein Programm oder Gerät außerhalb des Repos (etwa ein installiertes Spiel), einen Zugang, ein Geheimnis, oder eine Entscheidung, deren falsche Annahme teuer wäre. Große Pläne warten nicht mehr auf `/approve`.
-- **Mergen ohne Richter-Szenarien** (`auto_merge_rules.require_judge: false`): Hat der Richter nichts zu prüfen, merged die Factory, sobald alle Checks auf dem Pull Request grün sind, das Review freigegeben hat und die übrigen Regeln erfüllt sind. Ein Richter, der ausdrücklich durchfällt, hält den Merge weiter auf. Tickets mit Annahmen bleiben beim Menschen, solange `allow_assumptions` nicht gesetzt ist.
-- **Orchestrator** (`python3 -m factory orchestrate`, im Aufruf-Workflow nach Zeitplan): schaut nach allen Tickets des Projekts und
-  - startet Tickets neu, deren Lauf abgebrochen ist (kein Lauf und seit `orchestrator.stale_minutes` kein Ereignis) oder die an einem Fehler der Maschinerie hängen geblieben sind, höchstens `orchestrator.max_auto_restarts` Mal; Stopps, die an der Arbeit liegen (Budget, Nacharbeitsrunden, Richter), bleiben für dich;
-  - holt CI-Ergebnisse nach, die nie angekommen sind (rot: Nacharbeit, grün: Merge);
-  - bringt ausgelieferte Pull Requests, die GitHub als Merge-Konflikt mit der Basis meldet, selbst wieder auf den Stand: der nächste Lauf arbeitet die Basis ein, der Implementierer löst den Konflikt (Phase `rework_base`), danach prüfen Checks, Review und Richter neu. Höchstens einmal pro Commit der Basis, nur bei freiem Platz und Tagesbudget; ein Konflikt, der bleibt, wartet auf dich;
-  - gibt freie Plätze an wartende Tickets.
+- **Assumptions instead of questions** (`pipeline.questions: assume`): Intake and planner settle open points themselves, take the reading that is easiest to change later, and write every assumption into a comment on the issue and into the pull request ("Annahmen, bitte prüfen": assumptions, please check). The ticket stops only for what only you can provide: a program or device outside the repo (such as an installed game), an access, a secret, or a decision where a wrong assumption would be expensive. Big plans no longer wait for `/approve`.
+- **Merging without judge scenarios** (`auto_merge_rules.require_judge: false`): If the judge has nothing to test, the factory merges as soon as all checks on the pull request are green, the review approved and the other rules are met. A judge that explicitly fails still holds the merge. Tickets with assumptions stay with a human as long as `allow_assumptions` is not set.
+- **Orchestrator** (`python3 -m factory orchestrate`, on a schedule in the calling workflow): looks at all tickets of the project and
+  - restarts tickets whose run broke off (no run and no event for `orchestrator.stale_minutes`) or that got stuck on a fault of the machinery, at most `orchestrator.max_auto_restarts` times; stops caused by the work itself (budget, rework rounds, judge) stay with you;
+  - fetches CI results that never arrived (red: rework, green: merge);
+  - brings delivered pull requests that GitHub reports as a merge conflict with the base back up to date by itself: the next run brings in the base, the implementer resolves the conflict (phase `rework_base`), then checks, review and judge test again. At most once per commit of the base, only with a free slot and daily budget left; a conflict that stays waits for you;
+  - gives free slots to waiting tickets.
 
-  Plätze und Geld begrenzen `limits.max_parallel_tickets` und `limits.daily_budget_usd` (Ausgaben aller Tickets eines UTC-Tages). Ein Ticket ohne Platz wartet mit dem Label `factory:queued`; jeder Lauf, der endet, startet das älteste wartende selbst, der Zeitplan ist nur das Netz darunter.
+  `limits.max_parallel_tickets` and `limits.daily_budget_usd` (spending of all tickets of one UTC day) limit slots and money. A ticket without a slot waits with the label `factory:queued`; every run that ends starts the oldest waiting one itself, the schedule is only the net underneath.
 
-## Ein Projekt anbinden
+## Connecting a project
 
-Am einfachsten über die Web-Oberfläche: im Board oben rechts „+ Projekt verbinden" (oder `http://127.0.0.1:8787/settings#verbinden`).
+The easiest way is the web interface: "+ Projekt verbinden" at the top right of the board (or `http://127.0.0.1:8787/settings#verbinden`).
 
-1. Repo eintragen (Name als `owner/name` oder die Adresse von GitHub; deine eigenen Repos werden vorgeschlagen) und „Prüfen" klicken. Die Seite zeigt, was schon da ist und was fehlt, und schlägt aus den Dateien des Repos Setup und Checks vor.
-2. Ziel-Branch, Runner und die Kommandos der Checks ansehen oder ändern, dann „Verbinden".
-3. Die Seite legt die Labels an, erlaubt Actions, Pull Requests zu öffnen, öffnet einen Pull Request mit Profil, Workflow und Ticket-Vorlage und nimmt das Projekt ins Board auf. Arbeitet das Projekt nicht auf dem Standard-Branch, kommt ein zweiter Pull Request dazu, der nur den Workflow auf den Standard-Branch bringt.
-4. Für dich bleibt: die Pull Requests mergen und den Zugang zu Claude als Secret eintragen. Die Seite zeigt das Kommando; den Token fasst sie nicht an.
+1. Enter the repo (the name as `owner/name` or the GitHub address; your own repos are suggested) and click "Prüfen" (check). The page shows what is already there and what is missing, and suggests setup and checks from the files of the repo.
+2. Look at or change the target branch, the runner and the commands of the checks, then click "Verbinden" (connect).
+3. The page creates the labels, allows Actions to open pull requests, opens a pull request with profile, workflow and ticket template, and adds the project to the board. If the project does not work on the default branch, a second pull request follows that only brings the workflow onto the default branch.
+4. What is left for you: merge the pull requests and enter the access to Claude as a secret. The page shows the command; it does not touch the token.
 
-Auf einen Branch, an dem gearbeitet wird, schreibt die Seite nie direkt. Ein verbundenes Projekt zeigt unter seinem Namen jederzeit denselben Stand („Stand neu prüfen"), und „aus dem Board nehmen" entfernt es wieder aus der Anzeige.
+The page never writes directly to a branch that is being worked on. A connected project always shows the same state under its name ("Stand neu prüfen": check again), and "aus dem Board nehmen" (remove from the board) takes it out of the display again.
 
-Dasselbe von Hand:
+The same by hand:
 
-1. `setup/attach-project.sh OWNER/REPO` legt die Labels an und erlaubt Actions, Pull Requests zu öffnen.
-2. Den Inhalt von `templates/product/` ins Repo kopieren und `.factory/profile.yaml` anpassen (Checks, Szenarien-Repo).
-3. Einen Modell-Zugang als Secret setzen, eines von beiden:
+1. `setup/attach-project.sh OWNER/REPO` creates the labels and allows Actions to open pull requests.
+2. Copy the contents of `templates/product/` into the repo and adapt `.factory/profile.yaml` (checks, scenario repo).
+3. Set a model access as a secret, one of the two:
    ```bash
    gh secret set ANTHROPIC_API_KEY --repo OWNER/REPO
    ```
    ```bash
    gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo OWNER/REPO
    ```
-   Der zweite Weg nutzt dein Claude-Abo; den Token erzeugt `claude setup-token`.
-4. Für den Richter ein privates Szenarien-Repo anlegen und dessen Deploy-Key (nur lesend) als Secret `SCENARIOS_DEPLOY_KEY` im Produkt-Repo hinterlegen.
+   The second way uses your Claude subscription; `claude setup-token` creates the token.
+4. For the judge, create a private scenario repo and store its deploy key (read-only) as the secret `SCENARIOS_DEPLOY_KEY` in the product repo.
 
-Für Projekte, die nicht auf dem Standard-Branch entwickeln oder einen eigenen Runner brauchen:
+For projects that do not develop on the default branch or need a runner of their own:
 
-- **Ziel-Branch:** `base: develop` im Aufruf-Workflow (beide Stellen). Tickets starten dann von diesem Branch, Pull Requests zielen auf ihn, und das Profil wird von dort gelesen. Der Aufruf-Workflow selbst muss auf dem Standard-Branch liegen, weil GitHub Issue-Ereignisse nur dort auswertet.
-- **Pflicht-Checks:** Öffnet die Factory einen Pull Request mit dem Job-Token, hält GitHub dessen Workflows oft zur Freigabe zurück (`action_required`). Nur diese Läufe melden sich am Pull Request; solange sie warten, bleibt er blockiert, auch wenn dieselben Checks anders gestartet grün sind. Die Factory gibt solche Läufe deshalb nach dem Öffnen selbst frei. Hält GitHub nichts zurück, gilt: Ein Pull Request der Factory startet keine Workflows des Projekts. Verlangt der Branch-Schutz Checks, nennt das Profil sie unter `overrides.delivery.trigger_workflows`; die Factory startet sie dann selbst auf dem Ticket-Branch. Die Workflows brauchen dafür den Auslöser `workflow_dispatch`.
-- **CI als Tor, ohne dass Agents warten:** Braucht die CI eine Maschine, die es nur einmal gibt (ein Mac mit Unity-Lizenz), bleibt der Arbeits-Job auf GitHubs Runnern (`runtime: { work: linux }`), und im Ticket laufen nur die Checks, die diese Maschine nicht brauchen. Die schwere Suite läuft als CI auf dem Pull Request und wartet dort auf ihren Runner. Ihr Ergebnis kommt über einen letzten Job im CI-Workflow zurück, der `report-ci.yml` aufruft (Beispiel im Kopf der Datei): Die Factory startet die CI mit dem Job-Token, und für solche Läufe startet GitHub kein `workflow_run`; `workflow_dispatch` ist der eine Weg zurück. Für Läufe, die ein Mensch auslöst, hört der Aufruf-Workflow zusätzlich mit `workflow_run` auf diese Workflows (ihre `name:`, nur auf `factory/**`-Branches). Ist die CI rot, geht das Ticket mit dem Log der fehlgeschlagenen Schritte zur Nacharbeit zurück (`rework_ci`) und läuft danach wieder bis zum Pull Request; nach `pipeline.max_ci_rounds` roten Runden hält es an. Die Einstellungsseite trägt den Auslöser beim Verbinden ein, wenn Pflicht-Checks angegeben sind.
-- **Langsam gebaute Ordner:** `warm_dirs: [Library]` im Profil nennt Ordner, die git ignoriert und die die Werkzeuge des Projekts nur langsam neu bauen (Unitys `Library/`). Jeder Ticket-Ordner und jeder parallele Arbeiter startet mit einer Kopie aus dem Checkout des Runners, auf APFS als Klon ohne zusätzlichen Platz. Nach grünen Checks übernimmt der Runner den neueren Stand, damit das nächste Ticket warm startet.
-- **Eigener Runner:** `runtime: { work: unity }` im Profil schickt den Arbeits-Job auf den Runner der Fähigkeit. Die kleinen Steuer-Jobs (route, deliver, CI-Rückmeldung, Orchestrator, Ergebnis) laufen auf GitHubs Runnern, außer der Aufruf-Workflow gibt jedem `uses:`-Job `runner: '["factory-mac"]'` mit; dann läuft die ganze Factory auf eigenen Maschinen. Auf eigenen Runnern räumt der Checkout ignorierte Ordner nicht weg. Dort läuft der Agent ohne Sandbox und darf nur die Programme aus `agent_commands` starten. Der Checkout lässt ignorierte Ordner wie Unitys `Library/` stehen.
+- **Target branch:** `base: develop` in the calling workflow (both places). Tickets then start from that branch, pull requests target it, and the profile is read from there. The calling workflow itself must be on the default branch, because GitHub evaluates issue events only there.
+- **Required checks:** When the factory opens a pull request with the job token, GitHub often holds that pull request's workflows back for approval (`action_required`). Only those runs report to the pull request; as long as they wait, it stays blocked, even if the same checks are green when started another way. The factory therefore approves such runs itself after opening. If GitHub holds nothing back, this applies: a pull request of the factory starts no workflows of the project. If branch protection requires checks, the profile names them under `overrides.delivery.trigger_workflows`; the factory then starts them itself on the ticket branch. The workflows need the trigger `workflow_dispatch` for that.
+- **CI as a gate without agents waiting:** If the CI needs a machine that exists only once (a Mac with a Unity licence), the work job stays on GitHub's runners (`runtime: { work: linux }`), and only the checks that do not need that machine run in the ticket. The heavy suite runs as CI on the pull request and waits for its runner there. Its result comes back through a last job in the CI workflow that calls `report-ci.yml` (example at the top of that file): the factory starts the CI with the job token, and for such runs GitHub starts no `workflow_run`; `workflow_dispatch` is the one way back. For runs a human triggers, the calling workflow also listens to these workflows with `workflow_run` (their `name:`, only on `factory/**` branches). If the CI is red, the ticket goes back to rework with the log of the failed steps (`rework_ci`) and then runs up to the pull request again; after `pipeline.max_ci_rounds` red rounds it stops. The settings page enters the trigger when connecting if required checks are given.
+- **Slowly built folders:** `warm_dirs: [Library]` in the profile names folders that git ignores and that the project's tools rebuild only slowly (Unity's `Library/`). Every ticket folder and every parallel worker starts with a copy from the runner's checkout, on APFS as a clone without extra space. After green checks the runner takes over the newer state so that the next ticket starts warm.
+- **Own runner:** `runtime: { work: unity }` in the profile sends the work job to the runner of that capability. The small control jobs (route, deliver, CI report, orchestrator, outcome) run on GitHub's runners unless the calling workflow gives every `uses:` job `runner: '["factory-mac"]'`; then the whole factory runs on your own machines. On your own runners the checkout does not clear ignored folders such as Unity's `Library/`. There the agent runs without a sandbox and may only start the programs from `agent_commands`.
 
-Danach: Issue nach der Vorlage schreiben, Label `factory:go` setzen. Das Label zählt nur, wenn der Besitzer des Repos es setzt.
+After that: write an issue from the template and set the label `factory:go`. The label counts only if the owner of the repo sets it.
 
-## Bedienen
+## Operating
 
-| Du willst | So geht es |
+| You want to | How |
 |---|---|
-| ein Ticket starten | Label `factory:go` am Issue |
-| eine Rückfrage beantworten | im Issue antworten; das Ticket läuft weiter |
-| einen großen Plan freigeben | mit `/approve` antworten, oder mit einem Änderungswunsch |
-| ein angehaltenes Ticket neu starten | „Neu starten“ auf dem Board, oder `factory:go` erneut setzen; es macht an der Stelle weiter, mit frischem Budget. Ein Kommentar von dir davor geht als Hinweis an den Implementierer |
-| ein Ticket, dessen Lauf abgebrochen ist, weiterlaufen lassen | „Erneut anstoßen“ im Ticket auf dem Board: startet den Workflow für das Issue neu, das Ticket macht in seiner Phase weiter. Ein Lauf, der noch arbeitet, wird nicht verdoppelt; der neue wartet dahinter |
-| die Leitungen testen, ohne Tokens | Actions → factory → Run workflow, Haken bei „Trockenlauf“ |
+| start a ticket | label `factory:go` on the issue |
+| answer a question | reply in the issue; the ticket carries on |
+| approve a big plan | reply with `/approve`, or with a change request |
+| restart a stopped ticket | "Neu starten" (restart) on the board, or set `factory:go` again; it carries on where it stopped, with fresh budget. A comment from you before that goes to the implementer as a hint |
+| let a ticket whose run broke off carry on | "Erneut anstoßen" (kick again) in the ticket on the board: starts the workflow for the issue again, the ticket carries on in its phase. A run that is still working is not doubled; the new one waits behind it |
+| stop everything in a project | "Projekt anhalten" (stop project) on the board: disables the factory workflow and cancels its runs; "Fortsetzen" (resume) turns it back on |
+| test the plumbing without tokens | Actions → factory → Run workflow, tick "Trockenlauf" (dry run) |
 
-Der Zustand eines Tickets liegt im Branch `factory-state` des Produkt-Repos unter `tickets/<nummer>/`: alle Vertragsdateien, `status.json` und `events.jsonl`.
+The state of a ticket lives in the branch `factory-state` of the product repo under `tickets/<number>/`: all contract files, `status.json` and `events.jsonl`.
 
 ## Board
 
-Ein kleines Kanban-Board zeigt alle Tickets nach ihrem Stand: Eingang, Planung, Umsetzung, Prüfung, Wartet auf dich, Angehalten, Pull Request, Fertig.
+A small Kanban board shows all tickets by their state: intake, planning, implementation, review, waiting for you, stopped, pull request, done.
 
 ```bash
 python3 -m factory board
@@ -247,77 +248,81 @@ python3 -m factory board
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/assets/flow-signal-dark.webp" alt="Stellwerk: die Stationen als Netz, Linien zeigen den Durchsatz"><br><sub><b>Stellwerk:</b> wo Tickets liegen und wie sie fließen</sub></td>
-    <td width="50%"><img src="docs/assets/ticket-dark.webp" alt="Ein geöffnetes Ticket mit dem Ablauf seiner Stationen"><br><sub><b>Ticket:</b> jeder Schritt mit Modell und Dauer</sub></td>
+    <td width="50%"><img src="docs/assets/flow-signal-dark.webp" alt="Signal box: the stations as a network, lines show the throughput"><br><sub><b>Signal box ("Stellwerk"):</b> where tickets sit and how they flow</sub></td>
+    <td width="50%"><img src="docs/assets/ticket-dark.webp" alt="An open ticket with the flow of its stations"><br><sub><b>Ticket:</b> every step with model and duration</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/assets/flow-timetable-dark.webp" alt="Fahrplan: jedes Ticket auf einer Zeitachse"><br><sub><b>Fahrplan:</b> wohin die Zeit ging</sub></td>
-    <td width="50%"><img src="docs/assets/flow-line-dark.webp" alt="Linie: die Stationen als Abschnitte der Halle"><br><sub><b>Linie:</b> das Band von der Seite</sub></td>
+    <td width="50%"><img src="docs/assets/flow-timetable-dark.webp" alt="Timetable: every ticket on a time axis"><br><sub><b>Timetable ("Fahrplan"):</b> where the time went</sub></td>
+    <td width="50%"><img src="docs/assets/flow-line-dark.webp" alt="Line: the stations as sections of the hall"><br><sub><b>Line ("Linie"):</b> the belt seen from the side</sub></td>
   </tr>
 </table>
 
+The captures show the board with a sample project.
 
-Danach `http://127.0.0.1:8787` öffnen. Jedes Projekt hat sein eigenes Board unter `/p/OWNER/REPO` (lokale Läufe unter `/p/local/N`): oben was dich braucht, darunter das Fließband mit einer Bahn je Station, am Ende die fertigen Tickets. Die Startseite zeigt alle Projekte als Kacheln mit offenen Punkten, laufender Arbeit und Kosten; ist nur ein Projekt verbunden, öffnet sie direkt dessen Board. Über die Leiste oben wechselst du zwischen den Projekten. Das Board liest nur: den Branch `factory-state` der Repos unter `board.repos` in `settings.local.yaml` (über `gh`) und die lokalen Läufe unter `board.local`. Es aktualisiert sich alle 8 Sekunden; ein Ticket, an dem gerade gearbeitet wird, hat einen blauen Rand.
+Then open `http://127.0.0.1:8787`. Every project has its own board at `/p/OWNER/REPO` (local runs at `/p/local/N`): at the top what needs you, below it the production line with one lane per station, at the end the finished tickets. The start page shows all projects as tiles with open points, running work and cost; if only one project is connected, it opens that project's board directly. You switch between projects in the bar at the top. The board only reads: the branch `factory-state` of the repos under `board.repos` in `settings.local.yaml` (through `gh`) and the local runs under `board.local`. It refreshes every 8 seconds; a ticket that is being worked on has a highlighted edge.
 
-Angehaltene Tickets haben auf ihrer Karte den Knopf **Neu starten**, Tickets in Arbeit im geöffneten Ablauf den Knopf **Erneut anstoßen**. Beide starten den Workflow `factory.yml` des Projekts für dieses Issue, mit deinem `gh`-Zugang; wie die Einstellungsseite nimmt das Board solche Anfragen nur von sich selbst auf diesem Rechner an.
+Stopped tickets have the button **Neu starten** on their card, tickets in progress have the button **Erneut anstoßen** in the opened flow. Both start the project's workflow `factory.yml` for that issue, with your `gh` access; like the settings page, the board accepts such requests only from itself on this machine.
 
-Ein Klick auf eine Karte öffnet den Ablauf des Tickets:
+A click on a card opens the flow of the ticket:
 
-- **Stationen** der Reihe nach: welche fertig ist, welche gerade läuft, mit Dauer und Kosten je Station und je Lauf
-- **Skills:** welche einer Station angeboten wurden und welche der Agent wirklich aufgerufen hat
-- **Tools:** wie oft welches Tool lief (Bash, Read, Edit, …)
-- **Ort:** wo die Station lief, etwa „GitHub-Runner, frische VM, kein Docker“
-- **Aktivität:** jeder Tool-Aufruf der Agents mit Uhrzeit, während des Laufs alle paar Sekunden aktualisiert. Der Richter fehlt dort mit Absicht, denn was er tut, verrät die Szenarien.
-- **Tokens und Kontextfenster:** je Lauf die genauen Tokens (Eingabe, Ausgabe, aus dem Cache gelesen, in den Cache geschrieben) und wie voll das Kontextfenster höchstens war
-- darunter Auftrag, Plan, Funde des Reviews, Fehlerbilder des Richters und der Verlauf der Ereignisse
+- **Stations** in order: which is done, which is running, with duration and cost per station and per run
+- **Skills:** which were offered to a station and which the agent really called
+- **Tools:** how often which tool ran (Bash, Read, Edit, …)
+- **Place:** where the station ran, for example "GitHub runner, fresh VM, no Docker"
+- **Activity:** every tool call of the agents with its time, refreshed every few seconds during the run. The judge is missing there on purpose, because what it does gives the scenarios away.
+- **Tokens and context window:** per run the exact tokens (input, output, read from cache, written to cache) and how full the context window was at most
+- below that the mandate, the plan, the findings of the review, the failures the judge reported and the history of events
 
-Ein Klick auf eine **Station** im Ablauf öffnet daneben ihre Sitzungen: den Auftrag an die Station, was der Agent gesagt hat, jeden Tool-Aufruf mit Eingabe und Ergebnis, die Antwort am Ende und die Dateien, die die Station geschrieben hat. Zugangsdaten werden vor dem Schreiben entfernt. Die Sitzung des Richters bleibt in seinem Job.
+A click on a **station** in the flow opens its sessions next to it: the order to the station, what the agent said, every tool call with input and result, the answer at the end and the files the station wrote. Credentials are removed before writing. The judge's session stays in its job.
 
-Oben im Board steht der Stand deines **Claude-Abos**: wie viel Prozent des Kontingents verbraucht sind und wann es sich zurücksetzt. Die Claude-CLI meldet diesen Wert bei jedem Lauf; er gilt für das ganze Abo, nicht nur für die Factory. Je Ticket zeigt das Board, um wie viele Prozentpunkte der Wert während des Tickets gestiegen ist.
+At the top of the board is the state of your **Claude subscription**: what percentage of the quota is used and when it resets. The board reads it with the login of the Claude CLI on this machine; it applies to the whole subscription, not only to the factory. Per ticket the board shows by how many percentage points the value rose during the ticket.
 
-Unter dem Board steht eine Tabelle über alle Tickets: Dauer und Kosten je Station, Arbeitszeit, Durchlaufzeit, Gesamtkosten, Tokens, Abo-Verbrauch und benutzte Skills.
+Below the board is a table of all tickets: duration and cost per station, working time, lead time, total cost, tokens, subscription use and skills used.
 
-Die Factory liest dafür jeden Agent-Lauf Zeile für Zeile mit und veröffentlicht ihren Stand vor jeder Station und währenddessen etwa alle 15 Sekunden.
+For this the factory reads every agent run line by line and publishes its state before every station and about every 15 seconds while it runs.
 
-## Lokal laufen lassen
+## Running locally
 
-Derselbe Ablauf ohne GitHub, mit dem Claude-Login dieses Rechners:
+The same flow without GitHub, with the Claude login of this machine:
 
 ```bash
-python3 -m factory local --repo ../mein-projekt --issue 1 --issue-file ticket.md --scenarios ../mein-projekt-scenarios --budget 5
+python3 -m factory local --repo ../my-project --issue 1 --issue-file ticket.md --scenarios ../my-project-scenarios --budget 5
 ```
 
-Das Issue ist eine Markdown-Datei (erste Zeile ist der Titel). Gearbeitet wird in einem eigenen Worktree unter `~/.cache/software-factory/<projekt>/`; der Arbeitsstand im Projektordner bleibt unberührt. Lokal gibt es keine Sandbox: Der Implementierer darf nur die Programme starten, die das Profil unter `agent_commands` nennt.
+The issue is a Markdown file (the first line is the title). Work happens in a separate worktree under `~/.cache/software-factory/<project>/`; the working state in the project folder stays untouched. Locally there is no sandbox: the implementer may only start the programs the profile names under `agent_commands`.
 
-Tests der Factory selbst, ohne Modellaufrufe:
+Tests of the factory itself, without model calls:
 
 ```bash
 python3 -m pytest -q
 ```
 
-## Sicherheit
+## Security
 
-- Agents und Checks bekommen eine bereinigte Umgebung ohne GitHub-Token. Git-Operationen übers Netz macht nur das Steuerskript.
-- Änderungen an `.github/` und `.factory/` werden vor jedem Commit verworfen. Das Profil wird immer vom Basis-Branch gelesen.
-- Stationen, die nur lesen sollen, können den Arbeitsstand nicht verändern: Was sie ändern, wird zurückgesetzt.
-- Der Richter gibt nur Wert und Fehlerbild heraus. Ein Fehlerbild, das Text aus einem Szenario enthält, wird zurückgehalten.
-- Jedes Ticket hat ein Budget; ist es aufgebraucht, hält das Ticket an.
-- Docker wird nicht benutzt. Auf GitHub läuft jeder Job in einer frischen virtuellen Maschine, die danach verworfen wird; lokal läuft die Factory ohne Sandbox in einem eigenen Worktree.
+- Agents and checks get a cleaned environment without a GitHub token. Only the control script does git operations over the network.
+- Changes to `.github/` and `.factory/` are discarded before every commit. The profile is always read from the base branch.
+- Stations that should only read cannot change the working state: what they change is reset.
+- The judge gives out only the score and the failure. A failure that contains text from a scenario is held back.
+- Every ticket has a budget; when it is used up, the ticket stops.
+- Docker is not used. On GitHub every job runs in a fresh virtual machine that is thrown away afterwards; locally the factory runs without a sandbox in a separate worktree.
 
-## Stand
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
-Umgesetzt sind unbeaufsichtigte Läufe mit Holdout-Richter und der Dark-Modus mit Auto-Merge. Er ist je Projekt einzuschalten und läuft in einem Testprojekt.
+## Status
 
-Noch offen gegenüber der Spezifikation:
+Unattended runs with a holdout judge and dark mode with auto-merge are implemented. Dark mode is switched on per project and runs in a test project.
 
-- Parallele Arbeiter eines Tickets laufen auf demselben Runner im selben Job, nicht auf mehreren Maschinen. Mehrere Tickets laufen nebeneinander, jedes in einem eigenen Lauf.
-- Der Runner wird je Job gewählt (Arbeit, Richter), nicht je Station.
-- Die Plan-Prüfung nutzt einen eigenen Prompt nach dem Muster frischer Prüfer. Der Skill `egm-review-loop` ist vorbereitet (`roles.plan_check.entry`), aber unbeaufsichtigt noch nicht erprobt.
-- Kein Merge-Queue und kein Rollback. Statt der Queue arbeitet die Auslieferung den Basis-Branch vor dem Merge ein und prüft erneut; der Richter läuft danach nicht noch einmal.
-- Ein automatischer Merge durch den Job-Token löst keine weiteren Workflows aus und wird nicht als menschliches Urteil gezählt.
-- Der Richter spielt Szenarien über die Kommandozeile durch. Für Spiele (Messwerte, zerlegte Screenshots) fehlt die Umsetzung.
-- Pull Requests, die der Job-Token öffnet, lösen keine anderen Workflows aus. Ein Projekt mit Pflicht-Checks auf Pull Requests braucht dafür einen eigenen Token.
+Still open:
 
-## Lizenz
+- Parallel workers of a ticket run on the same runner in the same job, not on several machines. Several tickets run side by side, each in its own run.
+- The runner is chosen per job (work, judge), not per station.
+- The plan check uses its own prompt in the pattern of fresh reviewers. The skill `egm-review-loop` is prepared (`roles.plan_check.entry`) but not yet tried unattended.
+- No merge queue and no rollback. Instead of the queue, delivery brings in the base branch before the merge and checks again; the judge does not run a second time after that.
+- An automatic merge by the job token triggers no further workflows and is not counted as a human verdict.
+- The judge plays scenarios through the command line. For games (measurements, sliced screenshots) there is no implementation yet.
+- Pull requests opened by the job token trigger no other workflows. A project with required checks on pull requests needs its own token for that.
+- The board, the settings page and the factory's comments on issues are in German only.
 
-MIT, siehe [LICENSE](LICENSE). Freie Software: benutzen, ändern und weitergeben ist ausdrücklich erlaubt.
+## License
+
+MIT, see [LICENSE](LICENSE). Free software: using, changing and passing it on is explicitly allowed.
