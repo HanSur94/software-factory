@@ -12,6 +12,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322d3ee'/%3E%3Ctext x='16' y='21.5' font-family='monospace' font-size='14' font-weight='700' text-anchor='middle' fill='%230b1120'%3ESF%3C/text%3E%3C/svg%3E">
+<script>
+// Theme and language are per-browser conveniences; storage may be missing, then the system decides.
+(function () {
+  var t = null; try { t = localStorage.getItem("sf-page-theme"); } catch (e) {}
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -73,11 +80,23 @@ header.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
 .nav nav { display: flex; gap: 4px; margin-left: auto; }
 .nav nav a { text-decoration: none; color: var(--fg-2); font-size: 15px; padding: 10px 12px; border-radius: 8px; min-height: 44px; display: inline-flex; align-items: center; }
 .nav nav a:hover { color: var(--fg); background: var(--card); }
+.tools { display: flex; align-items: center; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 10px; padding: 3px; }
+.seg button { font: 600 13px/1 var(--mono); color: var(--fg-2); background: transparent; border: 0; border-radius: 7px; min-width: 40px; min-height: 36px; cursor: pointer; transition: background .2s, color .2s; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--run); color: var(--on-run); }
+.theme { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line-2); background: transparent; color: var(--fg); cursor: pointer; transition: border-color .2s, background .2s; }
+.theme:hover { border-color: var(--run); background: var(--run-soft); }
+.theme svg { width: 20px; height: 20px; }
+.theme .sun { display: none; }
+:root[data-mode="dark"] .theme .sun { display: block; } :root[data-mode="dark"] .theme .moon { display: none; }
 .gh { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border: 1px solid var(--line-2); border-radius: 10px;
   padding: 0 14px; min-height: 44px; font: 500 14px/1 var(--mono); transition: border-color .2s, background .2s; }
 .gh:hover { border-color: var(--run); background: var(--run-soft); }
 .gh svg { width: 18px; height: 18px; }
-@media (max-width: 820px) { .nav nav { display: none; } .gh { margin-left: auto; } }
+@media (max-width: 960px) { .nav nav { display: none; } .tools { margin-left: auto; } }
+@media (max-width: 520px) { .ghtext { display: none; } .gh { padding: 0 12px; } .brand { font-size: 13px; letter-spacing: .06em; } }
+@media (max-width: 440px) { .bname { display: none; } }
 
 /* hero */
 .hero { padding: 88px 0 40px; text-align: center; }
@@ -133,7 +152,22 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
 .box::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; border-radius: 2px; background: rgba(0, 0, 0, .35); box-shadow: 0 5px 0 rgba(0, 0, 0, .25); }
 .box.b1 { left: 10%; } .box.b2 { left: 45%; animation-delay: -4.5s; } .box.b3 { left: 80%; animation-delay: -9s; }
 @keyframes ride { 0% { left: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); box-shadow: 0 0 16px color-mix(in srgb, var(--done) 60%, transparent); } 100% { left: 100%; } }
-.st { position: relative; z-index: 1; text-align: center; background: var(--card); border: 1px solid var(--line-2); border-radius: 12px; padding: 30px 8px 14px; }
+.st { position: relative; z-index: 1; text-align: center; background: var(--card); border: 1px solid var(--line-2); border-radius: 12px; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.st-btn { display: block; width: 100%; height: 100%; padding: 30px 8px 14px; background: none; border: 0; border-radius: 12px; color: inherit; font: inherit; text-align: inherit; cursor: pointer; }
+.st:hover { border-color: var(--run); transform: translateY(-2px); }
+.st.on { border-color: var(--run); box-shadow: 0 0 0 1px var(--run), 0 10px 30px -12px color-mix(in srgb, var(--run) 60%, transparent); }
+.st-detail { margin-top: 18px; background: var(--card); border: 1px solid var(--run); border-radius: 14px; padding: 22px 24px; }
+.st-detail .hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.st-detail h3 { font: 600 20px/1.3 var(--sans); margin: 0; }
+.st-detail .model { font: 500 12.5px/1 var(--mono); color: var(--run); background: var(--run-soft); border-radius: 6px; padding: 6px 9px; }
+.st-detail .close { margin-left: auto; font: 500 13px/1 var(--mono); color: var(--fg-2); background: transparent; border: 1px solid var(--line-2); border-radius: 8px; min-height: 36px; padding: 0 12px; cursor: pointer; }
+.st-detail .close:hover { border-color: var(--run); color: var(--fg); }
+.st-detail p { margin: 12px 0 0; color: var(--fg-2); }
+.st-detail dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0; }
+.st-detail dl div { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.st-detail dt { font: 600 11.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.st-detail dd { margin: 0; font-size: 15.5px; }
+@media (max-width: 560px) { .st-detail dl { grid-template-columns: 1fr; } }
 .st::after { content: ""; position: absolute; left: 50%; bottom: -36px; width: 14px; height: 34px; transform: translateX(-50%);
   background: linear-gradient(90deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
 .st .num { position: absolute; top: 9px; left: 10px; font: 600 11px/1 var(--mono); color: var(--muted); letter-spacing: .08em; }
@@ -158,7 +192,11 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
   .box.b1 { left: 2px; top: 10%; } .box.b2 { left: 2px; top: 45%; } .box.b3 { left: 2px; top: 80%; }
   .box::before { left: 6px; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; box-shadow: 5px 0 0 rgba(0, 0, 0, .25); }
   @keyframes ride-down { 0% { top: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); } 100% { top: 100%; } }
-  .st { display: grid; grid-template-columns: 50px 1fr; gap: 0 14px; align-items: center; text-align: left; padding: 14px 14px 14px 14px; }
+  .st { text-align: left; }
+  .st:hover { transform: none; }
+  .st-btn { display: grid; grid-template-columns: 50px 1fr; gap: 0 14px; align-items: center; padding: 14px; }
+  .belt::after { display: none; }
+  .st-detail { margin: 0; }
   .st::after { left: -34px; bottom: auto; top: 50%; width: 34px; height: 14px; transform: translateY(-50%);
     background: linear-gradient(180deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
   .st .num { position: static; grid-column: 2; grid-row: 1; margin-bottom: 4px; }
@@ -212,6 +250,11 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
 .steps li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: 6px; width: 1px; background: var(--line-2); }
 .steps b { display: block; font-weight: 600; margin-bottom: 2px; }
 .steps span { color: var(--fg-2); font-size: 15.5px; }
+.proof { display: grid; gap: 14px; }
+.proof .shot { margin: 0; max-width: none; transform: none; }
+.proof .shot img { aspect-ratio: auto; }
+.flow-arrow { justify-self: center; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--done-soft); color: var(--done); transform: rotate(90deg); }
+.flow-arrow svg { width: 20px; height: 20px; }
 .phone { justify-self: center; width: min(320px, 100%); border-radius: 36px; padding: 10px; background: var(--card-2); border: 1px solid var(--line-2);
   box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .55), 0 0 80px -30px rgba(34, 211, 238, .35); }
 .phone img { border-radius: 27px; width: 100%; height: auto; }
@@ -251,7 +294,7 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Zum Inhalt springen</a>
+<a class="skip" href="#main" data-en="Skip to content">Zum Inhalt springen</a>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-gh" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></symbol>
@@ -266,151 +309,167 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
   <symbol id="i-pr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5v7M18 15.5V9a3 3 0 0 0-3-3h-4m0 0 2.5-2.5M11 6l2.5 2.5"/></symbol>
   <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
   <symbol id="i-git" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 7.5v9M18 11.5c0 4-6 3-11 5.5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
 </svg>
 
 <header class="top">
   <div class="wrap nav">
-    <a class="brand" href="#top" aria-label="Software Factory, nach oben"><span class="logo" aria-hidden="true">SF</span>SOFTWARE_FACTORY</a>
-    <nav aria-label="Abschnitte">
-      <a href="#ablauf">Ablauf</a>
-      <a href="#prinzipien">Prinzipien</a>
-      <a href="#board">Board</a>
-      <a href="#start">Schnellstart</a>
+    <a class="brand" href="#top" aria-label="Software Factory, nach oben" data-en-aria="Software Factory, back to top"><span class="logo" aria-hidden="true">SF</span><span class="bname">SOFTWARE_FACTORY</span></a>
+    <nav aria-label="Abschnitte" data-en-aria="Sections">
+      <a href="#ablauf" data-en="Flow">Ablauf</a>
+      <a href="#prinzipien" data-en="Principles">Prinzipien</a>
+      <a href="#board" data-en="Board">Board</a>
+      <a href="#start" data-en="Quick start">Schnellstart</a>
     </nav>
-    <a class="gh" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>GitHub</a>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Sprache" data-en-aria="Language">
+        <button type="button" class="lang" data-lang="de" aria-pressed="true" lang="de">DE</button>
+        <button type="button" class="lang" data-lang="en" aria-pressed="false" lang="en">EN</button>
+      </div>
+      <button type="button" class="theme" id="theme" aria-label="Dunkle Darstellung" data-en-aria="Dark theme"><svg class="sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="moon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <a class="gh" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg><span class="ghtext">GitHub</span></a>
+    </div>
   </div>
 </header>
 
 <main id="main">
   <div class="wrap hero" id="top">
-    <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Open Source · MIT</span>
-    <h1>Aus Issues werden <span class="hl">geprüfte Pull&nbsp;Requests</span></h1>
-    <p class="lead">Ein Label an einem GitHub-Issue setzt ein Fließband in Gang: Claude-Agents planen, bauen und prüfen den Code. Ein getrennter Richter testet das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat.</p>
+    <span class="eyebrow" data-en="&lt;span class=&quot;dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;Open source · MIT"><span class="dot" aria-hidden="true"></span>Open Source · MIT</span>
+    <h1 data-en="Issues become &lt;span class=&quot;hl&quot;&gt;reviewed pull&amp;nbsp;requests&lt;/span&gt;">Aus Issues werden <span class="hl">geprüfte Pull&nbsp;Requests</span></h1>
+    <p class="lead" data-en="One label on a GitHub issue starts a production line: Claude agents plan, build and review the code. A separate judge tests the result against scenarios the implementer never saw.">Ein Label an einem GitHub-Issue setzt ein Fließband in Gang: Claude-Agents planen, bauen und prüfen den Code. Ein getrennter Richter testet das Ergebnis gegen Szenarien, die der Implementierer nie gesehen hat.</p>
     <div class="ctas">
-      <a class="btn primary" href="#start"><svg aria-hidden="true"><use href="#i-terminal"/></svg>Schnellstart</a>
-      <a class="btn" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>Code ansehen</a>
+      <a class="btn primary" href="#start" data-en="&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-terminal&quot;/&gt;&lt;/svg&gt;Quick start"><svg aria-hidden="true"><use href="#i-terminal"/></svg>Schnellstart</a>
+      <a class="btn" href="https://github.com/HanSur94/software-factory" data-en="&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-gh&quot;/&gt;&lt;/svg&gt;View the code"><svg aria-hidden="true"><use href="#i-gh"/></svg>Code ansehen</a>
     </div>
     <div class="facts">
-      <span><b>8</b> Stationen</span>
-      <span><b>1</b> Steuerskript, kein Agent am Steuer</span>
-      <span><b>0</b> Tokens für Agents</span>
-      <span>GitHub Actions oder lokal</span>
+      <span data-en="&lt;b&gt;8&lt;/b&gt; stations"><b>8</b> Stationen</span>
+      <span data-en="&lt;b&gt;1&lt;/b&gt; control script, no agent at the wheel"><b>1</b> Steuerskript, kein Agent am Steuer</span>
+      <span data-en="&lt;b&gt;0&lt;/b&gt; tokens for agents"><b>0</b> Tokens für Agents</span>
+      <span data-en="GitHub Actions or local">GitHub Actions oder lokal</span>
     </div>
     <figure class="shot" style="margin-top:56px">
       <div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">127.0.0.1:8787 · Board</span></div>
-      <img src="assets/board-kanban-dark.webp" width="1920" height="1200" alt="Das Board der Software Factory: oben vier Kennzahlen, darunter drei Tickets, die auf eine Antwort oder einen Merge warten, und das Fließband mit den Spalten Eingang, Planung, Umsetzung und Prüfung." fetchpriority="high">
+      <img src="assets/board-kanban-dark.webp" data-en-alt="The Software Factory board: four figures at the top, three tickets waiting for an answer or a merge, and the line with the columns intake, planning, implementation and review." width="1920" height="1200" alt="Das Board der Software Factory: oben vier Kennzahlen, darunter drei Tickets, die auf eine Antwort oder einen Merge warten, und das Fließband mit den Spalten Eingang, Planung, Umsetzung und Prüfung." fetchpriority="high">
     </figure>
   </div>
 
   <section id="ablauf" class="wrap reveal" aria-labelledby="h-ablauf">
-    <div class="kicker">Ablauf eines Tickets</div>
-    <h2 id="h-ablauf">Acht Stationen. Jede beginnt mit frischem Kontext.</h2>
-    <p class="sub">Jede Station sieht nur die Dateien ihrer Vorgänger. Ein normales Python-Skript führt sie in fester Reihenfolge aus, zählt Runden und Budget und hält an einem Limit an.</p>
+    <div class="kicker" data-en="How a ticket flows">Ablauf eines Tickets</div>
+    <h2 id="h-ablauf" data-en="Eight stations. Each starts with fresh context.">Acht Stationen. Jede beginnt mit frischem Kontext.</h2>
+    <p class="sub" data-en="Each station sees only the files of the stations before it. A plain Python script runs them in a fixed order, counts rounds and budget, and stops at a limit. Click a station to see what it reads and writes.">Jede Station sieht nur die Dateien ihrer Vorgänger. Ein normales Python-Skript führt sie in fester Reihenfolge aus, zählt Runden und Budget und hält an einem Limit an. Ein Klick auf eine Station zeigt, was sie liest und schreibt.</p>
     <div class="factory" role="list">
       <div class="belt" aria-hidden="true"><span class="box b1"></span><span class="box b2"></span><span class="box b3"></span></div>
-      <div class="st agent" role="listitem"><span class="num">01</span><span class="node"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span><div><h3>Eingang</h3><p>Haiku · fester Auftrag</p></div></div>
-      <div class="st agent" role="listitem"><span class="num">02</span><span class="node"><svg aria-hidden="true"><use href="#i-map"/></svg></span><div><h3>Planer</h3><p>Fable · Tasks mit Kriterien</p></div></div>
-      <div class="st agent" role="listitem"><span class="num">03</span><span class="node"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><div><h3>Plan-Prüfung</h3><p>Opus · frischer Prüfer</p></div></div>
-      <div class="st agent" role="listitem"><span class="num">04</span><span class="node"><svg aria-hidden="true"><use href="#i-code"/></svg></span><div><h3>Implementierer</h3><p>Sonnet · parallel je Task</p></div></div>
-      <div class="st" role="listitem"><span class="num">05</span><span class="node"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><h3>Checks</h3><p>die Tests deines Projekts</p></div></div>
-      <div class="st agent" role="listitem"><span class="num">06</span><span class="node"><svg aria-hidden="true"><use href="#i-git"/></svg></span><div><h3>Reviewer</h3><p>Opus · liest den Diff</p></div></div>
-      <div class="st judge" role="listitem"><span class="num">07</span><span class="node"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><div><h3>Richter</h3><p>Opus · verborgene Szenarien</p></div></div>
-      <div class="st" role="listitem"><span class="num">08</span><span class="node"><svg aria-hidden="true"><use href="#i-pr"/></svg></span><div><h3>Auslieferung</h3><p>Pull Request oder Merge</p></div></div>
+      <div class="st agent" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="0"><span class="num">01</span><span class="node"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span><div><h3 data-en="Intake">Eingang</h3><p data-en="Haiku · fixed mandate">Haiku · fester Auftrag</p></div></button></div>
+      <div class="st agent" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="1"><span class="num">02</span><span class="node"><svg aria-hidden="true"><use href="#i-map"/></svg></span><div><h3 data-en="Planner">Planer</h3><p data-en="Fable · tasks with criteria">Fable · Tasks mit Kriterien</p></div></button></div>
+      <div class="st agent" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="2"><span class="num">03</span><span class="node"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><div><h3 data-en="Plan check">Plan-Prüfung</h3><p data-en="Opus · fresh reviewer">Opus · frischer Prüfer</p></div></button></div>
+      <div class="st agent" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="3"><span class="num">04</span><span class="node"><svg aria-hidden="true"><use href="#i-code"/></svg></span><div><h3 data-en="Implementer">Implementierer</h3><p data-en="Sonnet · parallel per task">Sonnet · parallel je Task</p></div></button></div>
+      <div class="st" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="4"><span class="num">05</span><span class="node"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><h3>Checks</h3><p data-en="your project&#x27;s tests">die Tests deines Projekts</p></div></button></div>
+      <div class="st agent" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="5"><span class="num">06</span><span class="node"><svg aria-hidden="true"><use href="#i-git"/></svg></span><div><h3>Reviewer</h3><p data-en="Opus · reads the diff">Opus · liest den Diff</p></div></button></div>
+      <div class="st judge" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="6"><span class="num">07</span><span class="node"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><div><h3 data-en="Judge">Richter</h3><p data-en="Opus · hidden scenarios">Opus · verborgene Szenarien</p></div></button></div>
+      <div class="st" role="listitem"><button type="button" class="st-btn" aria-expanded="false" aria-controls="st-detail" data-i="7"><span class="num">08</span><span class="node"><svg aria-hidden="true"><use href="#i-pr"/></svg></span><div><h3 data-en="Delivery">Auslieferung</h3><p data-en="Pull request or merge">Pull Request oder Merge</p></div></button></div>
     </div>
+    <div class="st-detail" id="st-detail" role="region" aria-live="polite" hidden></div>
   </section>
 
   <section id="prinzipien" class="wrap reveal" aria-labelledby="h-prinzipien">
-    <div class="kicker">Warum es trägt</div>
-    <h2 id="h-prinzipien">Vorhersagbar wie ein Skript, gründlich wie ein Team.</h2>
+    <div class="kicker" data-en="Why it holds">Warum es trägt</div>
+    <h2 id="h-prinzipien" data-en="Predictable as a script, thorough as a team.">Vorhersagbar wie ein Skript, gründlich wie ein Team.</h2>
     <div class="grid4">
-      <article class="card"><span class="ic"><svg aria-hidden="true"><use href="#i-cpu"/></svg></span><h3>Ein Skript steuert</h3><p>Reihenfolge, Runden, Budget und Parallelität entscheidet <code>pipeline.py</code>, kein Agent. Das ist testbar, und ein Limit hält zuverlässig an.</p></article>
-      <article class="card done"><span class="ic"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><h3>Ein Richter, der mehr weiß</h3><p>Szenarien liegen in einem eigenen Repo. Der Richter gibt nur Wert und Fehlerbild heraus, nie den Szenario-Text. Auf den Test hin bauen geht nicht.</p></article>
-      <article class="card pr"><span class="ic"><svg aria-hidden="true"><use href="#i-git"/></svg></span><h3>Parallele Arbeiter</h3><p>Unabhängige Tasks laufen gleichzeitig, jeder in einem eigenen Git-Worktree. Das Skript führt ihre Commits zusammen; Checks und Richter prüfen das Ganze.</p></article>
-      <article class="card you"><span class="ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span><h3>Agents ohne Schlüssel</h3><p>Agents und Checks bekommen keinen GitHub-Token. Änderungen an <code>.github/</code> und <code>.factory/</code> werden vor jedem Commit verworfen.</p></article>
+      <article class="card"><span class="ic"><svg aria-hidden="true"><use href="#i-cpu"/></svg></span><h3 data-en="A script is in charge">Ein Skript steuert</h3><p data-en="Order, rounds, budget and parallelism are decided by &lt;code&gt;pipeline.py&lt;/code&gt;, not by an agent. That is testable, and a limit reliably stops the run.">Reihenfolge, Runden, Budget und Parallelität entscheidet <code>pipeline.py</code>, kein Agent. Das ist testbar, und ein Limit hält zuverlässig an.</p></article>
+      <article class="card done"><span class="ic"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><h3 data-en="A judge who knows more">Ein Richter, der mehr weiß</h3><p data-en="Scenarios live in a separate repo. The judge only reports a score and the failure, never the scenario text. Building to the test is not possible.">Szenarien liegen in einem eigenen Repo. Der Richter gibt nur Wert und Fehlerbild heraus, nie den Szenario-Text. Auf den Test hin bauen geht nicht.</p></article>
+      <article class="card pr"><span class="ic"><svg aria-hidden="true"><use href="#i-git"/></svg></span><h3 data-en="Parallel workers">Parallele Arbeiter</h3><p data-en="Independent tasks run at the same time, each in its own git worktree. The script merges their commits; checks and judge test the whole.">Unabhängige Tasks laufen gleichzeitig, jeder in einem eigenen Git-Worktree. Das Skript führt ihre Commits zusammen; Checks und Richter prüfen das Ganze.</p></article>
+      <article class="card you"><span class="ic"><svg aria-hidden="true"><use href="#i-shield"/></svg></span><h3 data-en="Agents without keys">Agents ohne Schlüssel</h3><p data-en="Agents and checks get no GitHub token. Changes to &lt;code&gt;.github/&lt;/code&gt; and &lt;code&gt;.factory/&lt;/code&gt; are discarded before every commit.">Agents und Checks bekommen keinen GitHub-Token. Änderungen an <code>.github/</code> und <code>.factory/</code> werden vor jedem Commit verworfen.</p></article>
     </div>
   </section>
 
   <section id="board" class="wrap reveal" aria-labelledby="h-board">
-    <div class="kicker">Das Board</div>
-    <h2 id="h-board">Du siehst jedes Ticket auf dem Band.</h2>
-    <p class="sub">Ein lokales Board zeigt alle Projekte live: was läuft, was dich braucht und was fertig ist. Vier Ansichten für dasselbe Band, hell oder dunkel. Alle Bilder hier sind echte Aufnahmen des Boards.</p>
-    <div class="legend" aria-label="Farben des Boards">
-      <span class="chip"><i style="background:var(--run)"></i>läuft</span>
-      <span class="chip"><i style="background:var(--you)"></i>braucht dich</span>
-      <span class="chip"><i style="background:var(--pr)"></i>Pull Request</span>
-      <span class="chip"><i style="background:var(--done)"></i>fertig</span>
+    <div class="kicker" data-en="The board">Das Board</div>
+    <h2 id="h-board" data-en="You see every ticket on the line.">Du siehst jedes Ticket auf dem Band.</h2>
+    <p class="sub" data-en="A local board shows all projects live: what is running, what needs you and what is done. Four views of the same line, light or dark. Every image here is a real capture of the board.">Ein lokales Board zeigt alle Projekte live: was läuft, was dich braucht und was fertig ist. Vier Ansichten für dasselbe Band, hell oder dunkel. Alle Bilder hier sind echte Aufnahmen des Boards.</p>
+    <div class="legend" aria-label="Farben des Boards" data-en-aria="Board colours">
+      <span class="chip" data-en="&lt;i style=&quot;background:var(--run)&quot;&gt;&lt;/i&gt;running"><i style="background:var(--run)"></i>läuft</span>
+      <span class="chip" data-en="&lt;i style=&quot;background:var(--you)&quot;&gt;&lt;/i&gt;needs you"><i style="background:var(--you)"></i>braucht dich</span>
+      <span class="chip" data-en="&lt;i style=&quot;background:var(--pr)&quot;&gt;&lt;/i&gt;pull request"><i style="background:var(--pr)"></i>Pull Request</span>
+      <span class="chip" data-en="&lt;i style=&quot;background:var(--done)&quot;&gt;&lt;/i&gt;done"><i style="background:var(--done)"></i>fertig</span>
     </div>
 
-    <div class="tabs" role="tablist" aria-label="Ansichten des Boards">
+    <div class="tabs" role="tablist" aria-label="Ansichten des Boards" data-en-aria="Board views">
       <button role="tab" id="t-kanban" aria-controls="p-kanban" aria-selected="true">Kanban</button>
-      <button role="tab" id="t-line" aria-controls="p-line" aria-selected="false" tabindex="-1">Linie</button>
-      <button role="tab" id="t-time" aria-controls="p-time" aria-selected="false" tabindex="-1">Fahrplan</button>
-      <button role="tab" id="t-signal" aria-controls="p-signal" aria-selected="false" tabindex="-1">Stellwerk</button>
+      <button role="tab" id="t-line" aria-controls="p-line" aria-selected="false" tabindex="-1" data-en="Line">Linie</button>
+      <button role="tab" id="t-time" aria-controls="p-time" aria-selected="false" tabindex="-1" data-en="Timetable">Fahrplan</button>
+      <button role="tab" id="t-signal" aria-controls="p-signal" aria-selected="false" tabindex="-1" data-en="Signal box">Stellwerk</button>
       <button role="tab" id="t-ticket" aria-controls="p-ticket" aria-selected="false" tabindex="-1">Ticket</button>
     </div>
 
     <div class="panel" role="tabpanel" id="p-kanban" aria-labelledby="t-kanban">
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Kanban</span></div>
-        <img src="assets/flow-kanban-dark.webp" width="1920" height="1200" loading="lazy" alt="Kanban-Ansicht: Spalten Eingang, Planung, Umsetzung und Prüfung mit den laufenden Tickets, darunter die fertigen Tickets mit dem Urteil des Richters."></figure>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Line · Kanban">Fließband · Kanban</span></div>
+        <img src="assets/flow-kanban-dark.webp" data-en-alt="Kanban view: columns intake, planning, implementation and review with the running tickets, and below them the finished tickets with the judge&#x27;s verdict." width="1920" height="1200" loading="lazy" alt="Kanban-Ansicht: Spalten Eingang, Planung, Umsetzung und Prüfung mit den laufenden Tickets, darunter die fertigen Tickets mit dem Urteil des Richters."></figure>
     </div>
     <div class="panel" role="tabpanel" id="p-line" aria-labelledby="t-line" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Linie</span></div>
-        <img src="assets/flow-line-dark.webp" width="1920" height="1200" loading="lazy" alt="Linien-Ansicht: Spalten von Eingang bis Fertig, Tickets warten auf Runner oder laufen, darunter die Liste der automatisch gemergten Tickets."></figure>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Line · Line view">Fließband · Linie</span></div>
+        <img src="assets/flow-line-dark.webp" data-en-alt="Line view: columns from intake to done, tickets waiting for a runner or running, and the list of automatically merged tickets." width="1920" height="1200" loading="lazy" alt="Linien-Ansicht: Spalten von Eingang bis Fertig, Tickets warten auf Runner oder laufen, darunter die Liste der automatisch gemergten Tickets."></figure>
     </div>
     <div class="panel" role="tabpanel" id="p-time" aria-labelledby="t-time" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Fahrplan</span></div>
-        <img src="assets/flow-timetable-light.webp" width="1920" height="1200" loading="lazy" alt="Fahrplan-Ansicht in Hell: je Ticket eine Zeile auf einer Zeitachse, farbige Abschnitte für Planung, Umsetzung, Prüfung und Warten auf dich."></figure>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Line · Timetable">Fließband · Fahrplan</span></div>
+        <img src="assets/flow-timetable-light.webp" data-en-alt="Timetable view in light mode: one row per ticket on a time axis, coloured sections for planning, implementation, review and waiting for you." width="1920" height="1200" loading="lazy" alt="Fahrplan-Ansicht in Hell: je Ticket eine Zeile auf einer Zeitachse, farbige Abschnitte für Planung, Umsetzung, Prüfung und Warten auf dich."></figure>
     </div>
     <div class="panel" role="tabpanel" id="p-signal" hidden aria-labelledby="t-signal">
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Stellwerk</span></div>
-        <img src="assets/flow-signal-dark.webp" width="1920" height="1200" loading="lazy" alt="Stellwerk-Ansicht: die Stationen als Knoten eines Netzes, Linien zeigen, wie viele Tickets von Station zu Station gingen; ein gelber Ast führt zu dir."></figure>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Line · Signal box">Fließband · Stellwerk</span></div>
+        <img src="assets/flow-signal-dark.webp" data-en-alt="Signal box view: the stations as nodes of a network, lines show how many tickets went from station to station; a yellow branch leads to you." width="1920" height="1200" loading="lazy" alt="Stellwerk-Ansicht: die Stationen als Knoten eines Netzes, Linien zeigen, wie viele Tickets von Station zu Station gingen; ein gelber Ast führt zu dir."></figure>
     </div>
     <div class="panel" role="tabpanel" id="p-ticket" aria-labelledby="t-ticket" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Ticket #7 · Ablauf</span></div>
-        <img src="assets/ticket-dark.webp" width="1920" height="1200" loading="lazy" alt="Ein geöffnetes Ticket: Fortschritt über neun Stationen, Arbeitszeit und Durchlauf, darunter der Ablauf mit Eingang, Planer, Plan-Prüfung, Implementierer, Checks und Review samt Modell und Dauer."></figure>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Ticket #7 · Flow">Ticket #7 · Ablauf</span></div>
+        <img src="assets/ticket-dark.webp" data-en-alt="An open ticket: progress over nine stations, working time and lead time, and the flow with intake, planner, plan check, implementer, checks and review with model and duration." width="1920" height="1200" loading="lazy" alt="Ein geöffnetes Ticket: Fortschritt über neun Stationen, Arbeitszeit und Durchlauf, darunter der Ablauf mit Eingang, Planer, Plan-Prüfung, Implementierer, Checks und Review samt Modell und Dauer."></figure>
     </div>
   </section>
 
   <section id="dark" class="wrap reveal" aria-labelledby="h-dark">
     <div class="split">
       <div>
-        <div class="kicker">Dark-Modus</div>
-        <h2 id="h-dark">Wenn du willst, ganz ohne Menschen.</h2>
-        <p class="sub">Im Dark-Modus sind Plan-Prüfung, Review und Richter Tore, und die Factory mergt einen Pull Request selbst, wenn alle Regeln erfüllt sind. Ohne Dark-Modus wartet er auf dich. Du schaltest ihn je Projekt ein.</p>
+        <div class="kicker" data-en="Dark mode">Dark-Modus</div>
+        <h2 id="h-dark" data-en="If you want, no humans at all.">Wenn du willst, ganz ohne Menschen.</h2>
+        <p class="sub" data-en="In dark mode, plan check, review and judge are gates, and the factory merges a pull request itself once every rule is met. Without dark mode it waits for you. You switch it on per project.">Im Dark-Modus sind Plan-Prüfung, Review und Richter Tore, und die Factory mergt einen Pull Request selbst, wenn alle Regeln erfüllt sind. Ohne Dark-Modus wartet er auf dich. Du schaltest ihn je Projekt ein.</p>
         <ol class="steps" style="margin-top:30px">
-          <li><b>Label setzen</b><span><code>factory:go</code> an einem Issue startet das Ticket.</span></li>
-          <li><b>Rückfragen beantworten</b><span>Ist der Auftrag unklar, fragt der Eingang im Issue nach.</span></li>
-          <li><b>Großen Plan freigeben</b><span>Mit <code>/approve</code> im Issue, oder mit einem Änderungswunsch.</span></li>
-          <li><b>Mergen oder mergen lassen</b><span>Von Hand, oder im Dark-Modus automatisch nach dem Richter.</span></li>
+          <li><b data-en="Set the label">Label setzen</b><span data-en="&lt;code&gt;factory:go&lt;/code&gt; on an issue starts the ticket."><code>factory:go</code> an einem Issue startet das Ticket.</span></li>
+          <li><b data-en="Answer questions">Rückfragen beantworten</b><span data-en="If the mandate is unclear, intake asks in the issue.">Ist der Auftrag unklar, fragt der Eingang im Issue nach.</span></li>
+          <li><b data-en="Approve a big plan">Großen Plan freigeben</b><span data-en="With &lt;code&gt;/approve&lt;/code&gt; in the issue, or with a change request.">Mit <code>/approve</code> im Issue, oder mit einem Änderungswunsch.</span></li>
+          <li><b data-en="Merge, or let it merge">Mergen oder mergen lassen</b><span data-en="By hand, or automatically after the judge in dark mode.">Von Hand, oder im Dark-Modus automatisch nach dem Richter.</span></li>
         </ol>
       </div>
-      <div class="phone"><img src="assets/board-mobile-dark.webp" width="600" height="1299" loading="lazy" alt="Das Board auf einem Telefon: Kennzahlen und wartende Tickets untereinander."></div>
+      <div class="proof">
+        <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Settings · Dark mode">Einstellungen · Dark-Modus</span></div>
+          <img src="assets/settings-darkmode-dark.webp" data-en-alt="The dark mode switch in the settings, turned on: plan check, review and judge block, and a ticket is merged without you once every delivery rule is met." width="1200" height="132" loading="lazy" alt="Der Schalter Dark-Modus in den Einstellungen, eingeschaltet: Plan-Prüfung, Review und Richter blockieren, und ein Ticket wird ohne dich gemergt, wenn alle Regeln der Auslieferung erfüllt sind."></figure>
+        <span class="flow-arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+        <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url" data-en="Board · Done">Board · Fertig</span></div>
+          <img src="assets/done-merged-dark.webp" data-en-alt="The Done list on the board: three tickets, each with judge 6/6 scenarios and the note merged automatically." width="1084" height="228" loading="lazy" alt="Die Liste Fertig im Board: drei Tickets, jedes mit Richter 6/6 Szenarien und dem Vermerk automatisch gemergt."></figure>
+      </div>
     </div>
   </section>
 
   <section id="start" class="wrap reveal" aria-labelledby="h-start">
     <div class="split wide-right">
       <div>
-        <div class="kicker">Schnellstart</div>
-        <h2 id="h-start">In vier Befehlen am Laufen.</h2>
+        <div class="kicker" data-en="Quick start">Schnellstart</div>
+        <h2 id="h-start" data-en="Running in four commands.">In vier Befehlen am Laufen.</h2>
         <ul class="need">
           <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Python 3.12</span></li>
-          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>GitHub CLI <code>gh</code>, angemeldet</span></li>
-          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span>Claude Code mit einem Claude-Abo; für GitHub das Secret aus <code>claude setup-token</code></span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span data-en="GitHub CLI &lt;code&gt;gh&lt;/code&gt;, signed in">GitHub CLI <code>gh</code>, angemeldet</span></li>
+          <li><svg aria-hidden="true"><use href="#i-check"/></svg><span data-en="Claude Code with a Claude subscription; for GitHub the secret from &lt;code&gt;claude setup-token&lt;/code&gt;">Claude Code mit einem Claude-Abo; für GitHub das Secret aus <code>claude setup-token</code></span></li>
         </ul>
-        <p class="sub">Im Board „+ Projekt verbinden“ wählen. Die Seite legt Labels, Workflow und Profil per Pull Request in deinem Repo an.</p>
+        <p class="sub" data-en="Choose “+ Projekt verbinden” (connect project) on the board. It adds labels, workflow and profile to your repo through a pull request.">Im Board „+ Projekt verbinden“ wählen. Die Seite legt Labels, Workflow und Profil per Pull Request in deinem Repo an.</p>
       </div>
       <div class="term">
-        <div class="bar"><i></i><i></i><i></i><span class="url">zsh</span><button class="copy" type="button" data-copy="git clone https://github.com/HanSur94/software-factory.git&#10;cd software-factory&#10;pip install -r requirements.txt&#10;python3 -m factory board">Kopieren</button></div>
-<pre><span class="c"># holen und starten</span>
+        <div class="bar"><i></i><i></i><i></i><span class="url">zsh</span><button class="copy" type="button" data-copy="git clone https://github.com/HanSur94/software-factory.git&#10;cd software-factory&#10;pip install -r requirements.txt&#10;python3 -m factory board" data-en="Copy">Kopieren</button></div>
+<pre><span class="c" data-en="# get it and start"># holen und starten</span>
 <span class="p">$ </span>git clone https://github.com/HanSur94/software-factory.git
 <span class="p">$ </span>cd software-factory
 <span class="p">$ </span>pip install -r requirements.txt
 <span class="p">$ </span>python3 -m factory board
-<span class="ok">Board läuft auf http://127.0.0.1:8787</span>
+<span class="ok" data-en="Board running at http://127.0.0.1:8787">Board läuft auf http://127.0.0.1:8787</span>
 
-<span class="c"># oder ein Ticket ganz lokal, ohne GitHub</span>
+<span class="c" data-en="# or one ticket fully local, without GitHub"># oder ein Ticket ganz lokal, ohne GitHub</span>
 <span class="p">$ </span>python3 -m factory local --repo ../mein-projekt \
     --issue 1 --issue-file ticket.md --budget 5</pre>
       </div>
@@ -419,12 +478,12 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
 
   <div class="wrap">
     <div class="closing reveal">
-      <div class="kicker">Mitmachen</div>
-      <h2>Bau mit an der Fabrik.</h2>
-      <p class="sub">Die Software Factory ist freie Software unter MIT. Fehler, Ideen und Pull Requests sind willkommen.</p>
+      <div class="kicker" data-en="Contribute">Mitmachen</div>
+      <h2 data-en="The hall is open.">Die Halle ist offen.</h2>
+      <p class="sub" data-en="Software Factory is free software under MIT. Bugs, ideas and pull requests are welcome.">Die Software Factory ist freie Software unter MIT. Fehler, Ideen und Pull Requests sind willkommen.</p>
       <div class="ctas">
-        <a class="btn primary" href="https://github.com/HanSur94/software-factory"><svg aria-hidden="true"><use href="#i-gh"/></svg>Auf GitHub</a>
-        <a class="btn" href="https://github.com/HanSur94/software-factory/blob/main/CONTRIBUTING.md">So trägst du bei<svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="btn primary" href="https://github.com/HanSur94/software-factory" data-en="&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-gh&quot;/&gt;&lt;/svg&gt;On GitHub"><svg aria-hidden="true"><use href="#i-gh"/></svg>Auf GitHub</a>
+        <a class="btn" href="https://github.com/HanSur94/software-factory/blob/main/CONTRIBUTING.md" data-en="How to contribute&lt;svg aria-hidden=&quot;true&quot;&gt;&lt;use href=&quot;#i-arrow&quot;/&gt;&lt;/svg&gt;">So trägst du bei<svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -432,8 +491,8 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
 
 <footer>
   <div class="wrap">
-    <span>Software Factory · MIT-Lizenz</span>
-    <span><a href="https://github.com/HanSur94/software-factory">GitHub</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/README.md">Dokumentation</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/SECURITY.md">Sicherheit</a></span>
+    <span data-en="Software Factory · MIT license">Software Factory · MIT-Lizenz</span>
+    <span><a href="https://github.com/HanSur94/software-factory">GitHub</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/README.md" data-en="Documentation">Dokumentation</a> · <a href="https://github.com/HanSur94/software-factory/blob/main/SECURITY.md" data-en="Security">Sicherheit</a></span>
   </div>
 </footer>
 
@@ -458,11 +517,105 @@ tabs.forEach((t, i) => {
     if (e.key === "End") { e.preventDefault(); pick(tabs[tabs.length - 1], true); }
   });
 });
+// Light or dark: follows the system until the visitor picks one.
+const root = document.documentElement, themeBtn = document.getElementById("theme");
+const sysDark = matchMedia("(prefers-color-scheme: dark)");
+const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+let lang = "de";
+function markTheme() {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : sysDark.matches;
+  root.dataset.mode = dark ? "dark" : "light";
+  const de = dark ? "Helle Darstellung" : "Dunkle Darstellung", en = dark ? "Light theme" : "Dark theme";
+  themeBtn.setAttribute("aria-label", lang === "en" ? en : de);
+}
+themeBtn.addEventListener("click", () => {
+  root.dataset.theme = root.dataset.mode === "dark" ? "light" : "dark";
+  store("sf-page-theme", root.dataset.theme); markTheme();
+});
+sysDark.addEventListener("change", markTheme);
+
+// German or English: every translated element carries its English text in data-en.
+const META = { de: [document.title, document.querySelector('meta[name="description"]').content],
+  en: ["Software Factory – issues become reviewed pull requests",
+       "Open-source production line for code: Claude agents plan, build and review a GitHub issue, a separate judge tests against hidden scenarios. Run by a script, not by an agent."] };
+function setLang(l) {
+  lang = l; root.lang = l;
+  document.querySelectorAll("[data-en]").forEach(el => {
+    if (el.dataset.de === undefined) el.dataset.de = el.innerHTML;
+    el.innerHTML = l === "en" ? el.dataset.en : el.dataset.de;
+  });
+  document.querySelectorAll("[data-en-alt]").forEach(el => {
+    if (el.dataset.deAlt === undefined) el.dataset.deAlt = el.alt;
+    el.alt = l === "en" ? el.dataset.enAlt : el.dataset.deAlt;
+  });
+  document.querySelectorAll("[data-en-aria]").forEach(el => {
+    if (el.dataset.deAria === undefined) el.dataset.deAria = el.getAttribute("aria-label");
+    el.setAttribute("aria-label", l === "en" ? el.dataset.enAria : el.dataset.deAria);
+  });
+  document.title = META[l][0];
+  document.querySelector('meta[name="description"]').content = META[l][1];
+  document.querySelectorAll(".lang").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === l)));
+  markTheme();
+  if (openSt >= 0) drawDetail();
+}
+document.querySelectorAll(".lang").forEach(b => b.addEventListener("click", () => { store("sf-page-lang", b.dataset.lang); setLang(b.dataset.lang); }));
+const asked = new URLSearchParams(location.search).get("lang");
+const saved = store("sf-page-lang");
+setLang(asked === "en" || asked === "de" ? asked : saved || ((navigator.language || "de").toLowerCase().startsWith("de") ? "de" : "en"));
+
+// Stations: a click shows what the station reads and writes.
+const ST = [
+  { m: "Haiku 5.5", de: ["Eingang", "Das Issue", "ticket.json mit festem Auftrag, oder eine Rückfrage im Issue", "Macht aus einem frei geschriebenen Issue einen festen Auftrag mit Abnahmekriterien. Ist etwas unklar, fragt er im Issue nach und das Ticket wartet auf deine Antwort."],
+    en: ["Intake", "The issue", "ticket.json with a fixed mandate, or a question in the issue", "Turns a freely written issue into a fixed mandate with acceptance criteria. If something is unclear, it asks in the issue and the ticket waits for your answer."] },
+  { m: "Fable 5.2", de: ["Planer", "Ticket und Repo", "plan.md: Tasks mit Abnahmekriterien", "Zerlegt den Auftrag in Tasks, nennt je Task die Dateien und was davon abhängt. Daraus entscheidet das Skript, was parallel laufen darf. Große Pläne warten auf dein /approve."],
+    en: ["Planner", "Ticket and repo", "plan.md: tasks with acceptance criteria", "Splits the mandate into tasks and names the files and dependencies of each. From that the script decides what may run in parallel. Big plans wait for your /approve."] },
+  { m: "Opus 5.5", de: ["Plan-Prüfung", "Ticket und Plan", "plan-review.json", "Ein frischer Prüfer liest den Plan gegen den Auftrag. Beratend meldet er nur; als Tor schickt er den Plan zurück an den Planer."],
+    en: ["Plan check", "Ticket and plan", "plan-review.json", "A fresh reviewer reads the plan against the mandate. As advisor it only reports; as a gate it sends the plan back to the planner."] },
+  { m: "Sonnet 5.5", de: ["Implementierer", "Einen Task", "Code und Tests", "Unabhängige Tasks laufen gleichzeitig, jeder in einem eigenen Git-Worktree. Er darf nur die Programme starten, die das Profil des Projekts erlaubt, und bekommt keinen Token."],
+    en: ["Implementer", "One task", "Code and tests", "Independent tasks run at the same time, each in its own git worktree. It may only start the programs the project profile allows, and it gets no token."] },
+  { m: "Projekt-Kommandos", mEn: "project commands", de: ["Checks", "Den Branch", "Ergebnis; bei Fehlern fasst Haiku 5.5 die Logs zusammen", "Die Kommandos deines Projekts, etwa Tests und Linter. Schlägt etwas fehl, geht eine kurze Zusammenfassung zurück an den Implementierer."],
+    en: ["Checks", "The branch", "Result; on failure Haiku 5.5 sums up the logs", "Your project's own commands, such as tests and linters. If something fails, a short summary goes back to the implementer."] },
+  { m: "Opus 5.5", de: ["Reviewer", "Diff, Ticket und Plan", "review.md", "Liest den Diff wie ein erfahrener Kollege. Blockierende Punkte schicken das Ticket in die Nacharbeit; wiederholte Runden müssen weniger offene Punkte zeigen."],
+    en: ["Reviewer", "Diff, ticket and plan", "review.md", "Reads the diff like an experienced colleague. Blocking points send the ticket to rework; each further round must show fewer open points."] },
+  { m: "Opus 5.5", de: ["Richter", "Den gebauten Stand und das Szenarien-Repo", "verdict.json: Wert und Fehlerbild", "Spielt Szenarien durch, die der Implementierer nie gesehen hat. Heraus kommen nur Wert und Fehlerbild; ein Fehlerbild mit Szenario-Text wird zurückgehalten."],
+    en: ["Judge", "The built state and the scenario repo", "verdict.json: score and failure", "Plays through scenarios the implementer never saw. Only a score and the failure come out; a failure that quotes a scenario is held back."] },
+  { m: "Skript", mEn: "script", de: ["Auslieferung", "Das Urteil", "Pull Request, im Dark-Modus der Merge, oder die nächste Runde", "Öffnet den Pull Request mit Zusammenfassung. Im Dark-Modus arbeitet sie den Basis-Branch ein und mergt, wenn alle Regeln erfüllt sind."],
+    en: ["Delivery", "The verdict", "Pull request, the merge in dark mode, or the next round", "Opens the pull request with a summary. In dark mode it brings in the base branch and merges once every rule is met."] },
+];
+const detail = document.getElementById("st-detail"), factory = document.querySelector(".factory");
+const narrow = matchMedia("(max-width: 900px)");
+var openSt = -1;   // var: setLang runs before this line and reads it
+const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function drawDetail() {
+  document.querySelectorAll(".st-btn").forEach(b => {
+    const on = Number(b.dataset.i) === openSt;
+    b.setAttribute("aria-expanded", String(on)); b.parentElement.classList.toggle("on", on);
+  });
+  if (openSt < 0) { detail.hidden = true; return; }
+  const st = ST[openSt], t = st[lang], en = lang === "en";
+  detail.innerHTML = `<div class="hd"><span class="model">${String(openSt + 1).padStart(2, "0")}</span><h3>${esc(t[0])}</h3>
+    <span class="model">${esc(en && st.mEn ? st.mEn : st.m)}</span>
+    <button type="button" class="close">${en ? "Close" : "Schließen"}</button></div>
+    <dl><div><dt>${en ? "Reads" : "Liest"}</dt><dd>${esc(t[1])}</dd></div><div><dt>${en ? "Writes" : "Schreibt"}</dt><dd>${esc(t[2])}</dd></div></dl>
+    <p>${esc(t[3])}</p>`;
+  detail.querySelector(".close").addEventListener("click", () => {
+    const back = document.querySelector(`.st-btn[data-i="${openSt}"]`); openSt = -1; drawDetail(); back && back.focus();
+  });
+  // narrow: right under the station; wide: under the whole line
+  const card = document.querySelector(`.st-btn[data-i="${openSt}"]`).parentElement;
+  if (narrow.matches) card.after(detail); else factory.after(detail);
+  detail.hidden = false;
+}
+document.querySelectorAll(".st-btn").forEach(b => b.addEventListener("click", () => {
+  openSt = openSt === Number(b.dataset.i) ? -1 : Number(b.dataset.i); drawDetail();
+}));
+narrow.addEventListener("change", drawDetail);
+
 // Copy button for the quick start.
 document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Kopiert"; }
-  catch { b.textContent = "Bitte markieren"; }
-  setTimeout(() => (b.textContent = "Kopieren"), 1800);
+  try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = lang === "en" ? "Copied" : "Kopiert"; }
+  catch { b.textContent = lang === "en" ? "Select it" : "Bitte markieren"; }
+  setTimeout(() => (b.textContent = lang === "en" ? "Copy" : "Kopieren"), 1800);
 }));
 // Sections fade in once they come into view.
 const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
