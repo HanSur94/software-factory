@@ -183,12 +183,11 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
 .st div { min-width: 0; }
 /* narrow screens: the belt runs down the left side, the stations stand beside it */
 @media (max-width: 900px) {
-  .factory { grid-template-columns: 1fr; gap: 12px; padding: 0 0 0 70px; }
-  .belt { left: 4px; right: auto; top: -8px; bottom: -8px; width: 30px; height: auto;
+  .factory { grid-template-columns: 1fr; gap: 12px; padding: 0 0 64px 84px; margin-top: 100px; }
+  .belt { left: 4px; right: auto; top: -8px; bottom: 50px; width: 40px; height: auto; border-radius: 20px;
     background: repeating-linear-gradient(180deg, var(--belt-a) 0 16px, var(--belt-b) 16px 32px); animation-name: belt-down; }
   @keyframes belt-down { to { background-position: 0 32px; } }
-  .scene { display: none; }
-  .box { display: block; bottom: auto; left: 2px; width: 22px; height: 30px; animation-name: ride-down; }
+  .box { bottom: auto; left: 2px; width: 22px; height: 30px; animation-name: ride-down; }
   .box.b1 { left: 2px; top: 10%; } .box.b2 { left: 2px; top: 45%; } .box.b3 { left: 2px; top: 80%; }
   .box::before { left: 6px; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; box-shadow: 5px 0 0 rgba(0, 0, 0, .25); }
   @keyframes ride-down { 0% { top: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); } 100% { top: 100%; } }
@@ -201,7 +200,7 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
   .st .st-detail dl { grid-template-columns: 1fr; margin-top: 4px; }
   .st .st-detail p { font: 400 15.5px/1.55 var(--sans); color: var(--fg-2); margin-top: 12px; }
   @keyframes open { from { opacity: 0; transform: translateY(-4px); } }
-  .st::after { display: block; left: -34px; bottom: auto; top: 40px; width: 34px; height: 14px; transform: translateY(-50%);
+  .st::after { display: block; left: -40px; bottom: auto; top: 40px; width: 40px; height: 14px; transform: translateY(-50%);
     background: linear-gradient(180deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
   .st .num { position: static; grid-column: 2; grid-row: 1; margin-bottom: 4px; }
   .st .node { grid-row: 1 / span 2; margin: 0; }
@@ -304,6 +303,55 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
   .pkg { left: calc(43.75% - 22px); }
   .pkg .note { opacity: 0; } .pkg .crate { opacity: 1; }
   .pkg.again { left: calc(81.25% - 22px); opacity: 1; }
+}
+
+/* the same story on the vertical belt (narrow screens). The script puts the height of every station
+   into --y1 … --y8 and the end of the belt into --yend; the keyframes below read them. */
+@media (max-width: 900px) {
+  .scene { inset: 0 auto 0 0; width: 84px; height: auto; }
+  .chute { left: -1px; top: -60px; bottom: auto; }
+  .sign { left: 58px; top: -44px; bottom: auto; }
+  .sign::before { content: "← "; }
+  .rback { display: none; }
+  .bin { left: -4px; top: calc(var(--yend) + 4px); bottom: auto; }
+  .pkg { left: 2px; bottom: auto; top: 0; transform: scale(.8); }
+  @keyframes pkgA {
+    0% { top: -56px; opacity: 0; } 3% { opacity: 1; }
+    12%, 20% { top: calc(var(--y1) - 17px); }
+    27%, 34% { top: calc(var(--y2) - 17px); }
+    44%, 56% { top: calc(var(--y4) - 17px); }
+    72%, 80% { top: calc(var(--y7) - 17px); }
+    84%, 91% { top: calc(var(--y8) - 17px); }
+    96% { top: calc(var(--yend) - 22px); opacity: 1; } 97% { opacity: 0; } 100% { top: calc(var(--yend) - 22px); opacity: 0; } }
+  /* the parcel that fails rides back up beside the belt */
+  @keyframes pkgB {
+    0% { top: calc(var(--y4) - 17px); left: 2px; opacity: 0; } 2% { opacity: 1; }
+    8%, 14% { top: calc(var(--y5) - 17px); left: 2px; }
+    17% { top: calc(var(--y5) - 17px); left: 20px; }
+    25% { top: calc(var(--y4) - 17px); left: 20px; }
+    28% { top: calc(var(--y4) - 17px); left: 2px; opacity: 1; } 30%, 100% { top: calc(var(--y4) - 17px); left: 2px; opacity: 0; } }
+  /* arms reach sideways from the station tile */
+  .a1 { --y: var(--y1); } .a2 { --y: var(--y2); } .a4 { --y: calc(var(--y4) - 11px); } .a4b { --y: calc(var(--y4) + 11px); } .a7 { --y: var(--y7); }
+  .arm { left: 44px; bottom: auto; top: calc(var(--y) - 7px); margin-left: 0; width: 60px; height: 14px; }
+  .arm::before { left: 8px; right: 0; top: 4px; bottom: auto; width: auto; height: 6px; }
+  .arm::after { left: auto; right: 10px; top: 0; bottom: auto; }
+  .arm b { left: 0; right: auto; top: -3px; bottom: auto; width: 12px; height: 20px; }
+  .arm.plan b::after { left: -9px; right: auto; top: 3px; width: 8px; height: 14px; }
+  .arm.weld b { left: 0; right: auto; top: 1px; width: 15px; height: 12px; border-radius: 6px 2px 2px 6px; }
+  .arm.seal b { left: 0; right: auto; top: 0; width: 15px; height: 14px; border-radius: 4px 50% 50% 4px; }
+  @keyframes arm1 { 0%, 13%, 19%, 100% { transform: none; } 15%, 17% { transform: translateX(-9px); } }
+  @keyframes arm2 { 0%, 28%, 34%, 100% { transform: none; } 30%, 32% { transform: translateX(-9px); } }
+  @keyframes arm4 { 0%, 45%, 55%, 100% { transform: none; } 47%, 53% { transform: translateX(-8px); } 49%, 51% { transform: translateX(-6px); } }
+  @keyframes arm4b { 0%, 45%, 55%, 100% { transform: none; } 47%, 53% { transform: translateX(-8px); } 50% { transform: translateX(-6px); } }
+  @keyframes arm7 { 0%, 73%, 79%, 100% { transform: none; } 75%, 77% { transform: translateX(-9px); } }
+  .spark { left: 38px; bottom: auto; top: calc(var(--y4) - 8px); }
+  .gate { left: 4px; top: calc(var(--y5) - 24px); bottom: auto; width: 46px; height: 48px; border: 3px solid var(--belt-edge); border-left: 0; border-radius: 0 8px 8px 0; }
+  .gate i { top: auto; left: auto; right: -9px; }
+  .gate .ok { left: auto; top: 6px; } .gate .no { right: -9px; top: 26px; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .pkg { left: 2px; top: calc(var(--y4) - 17px); }
+  .pkg.again { left: 2px; top: calc(var(--y7) - 17px); opacity: 1; }
 }
 
 /* principles */
@@ -729,6 +777,20 @@ document.querySelectorAll(".st-btn").forEach(b => b.addEventListener("click", ()
   openSt = openSt === Number(b.dataset.i) ? -1 : Number(b.dataset.i); drawDetail();
 }));
 narrow.addEventListener("change", drawDetail);
+
+// The vertical belt needs to know where each station stands: the scene's keyframes read these heights.
+const scene = document.querySelector(".scene");
+function placeScene() {
+  const f = factory.getBoundingClientRect();
+  document.querySelectorAll(".st-btn").forEach((b, i) => {
+    const r = b.getBoundingClientRect();
+    scene.style.setProperty("--y" + (i + 1), Math.round(r.top - f.top + r.height / 2) + "px");
+  });
+  scene.style.setProperty("--yend", Math.round(f.height - 58) + "px");
+}
+placeScene();
+if ("ResizeObserver" in window) new ResizeObserver(placeScene).observe(factory);
+else addEventListener("resize", placeScene);
 
 // Copy button for the quick start.
 document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
