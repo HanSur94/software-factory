@@ -115,30 +115,56 @@ section { padding: 96px 0 0; }
 h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; margin: 14px 0 0; max-width: 22ch; text-wrap: balance; }
 .sub { color: var(--fg-2); max-width: 64ch; margin: 16px 0 0; }
 
-/* production line */
-.line { margin-top: 44px; position: relative; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
-.line::before { content: ""; position: absolute; left: 4%; right: 4%; top: 34px; height: 4px; border-radius: 4px;
-  background: repeating-linear-gradient(90deg, var(--line-2) 0 14px, transparent 14px 22px); }
-.belt-ticket { position: absolute; top: 25px; left: 4%; width: 22px; height: 22px; border-radius: 6px; background: var(--run);
-  box-shadow: 0 0 22px var(--run); animation: travel 9s cubic-bezier(.6, 0, .4, 1) infinite; }
-@keyframes travel { 0% { left: 4%; opacity: 0; } 6% { opacity: 1; } 88% { opacity: 1; } 100% { left: calc(96% - 22px); opacity: 0; } }
-.st { position: relative; text-align: center; }
-.st .node { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--card);
-  border: 2px solid var(--line-2); position: relative; z-index: 1; color: var(--fg-2); transition: border-color .3s, color .3s; }
-.st .node svg { width: 28px; height: 28px; }
-.st.judge .node { border-color: var(--done); color: var(--done); }
-.st.agent .node { border-color: color-mix(in srgb, var(--run) 60%, var(--line-2)); color: var(--run); }
-.st h3 { font: 600 15px/1.25 var(--sans); margin: 14px 0 4px; }
-.st p { margin: 0; font: 400 12.5px/1.4 var(--mono); color: var(--muted); }
-@media (max-width: 900px) {
-  .line { grid-template-columns: 1fr; gap: 0; }
-  .line::before { left: 35px; right: auto; top: 20px; bottom: 20px; width: 4px; height: auto;
-    background: repeating-linear-gradient(180deg, var(--line-2) 0 14px, transparent 14px 22px); }
-  .belt-ticket { display: none; }
-  .st { display: grid; grid-template-columns: 72px 1fr; gap: 0 18px; text-align: left; align-items: center; padding: 8px 0; }
-  .st h3 { margin: 0; } .st div { grid-column: 2; }
-}
+/* production line: stations stand over a running conveyor belt */
+:root { --belt-a: #1c263b; --belt-b: #243049; --belt-edge: #3a4964; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --belt-a: #cfd8e5; --belt-b: #dde4ee; --belt-edge: #9fb0c6; } }
+:root[data-theme="light"] { --belt-a: #cfd8e5; --belt-b: #dde4ee; --belt-edge: #9fb0c6; }
+.factory { position: relative; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; margin-top: 44px; padding-bottom: 92px; }
+.belt { position: absolute; left: -8px; right: -8px; bottom: 28px; height: 30px; border-radius: 15px; border: 2px solid var(--belt-edge);
+  background: repeating-linear-gradient(90deg, var(--belt-a) 0 16px, var(--belt-b) 16px 32px);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, .35); animation: belt 1.1s linear infinite; }
+@keyframes belt { to { background-position: 32px 0; } }
+/* rollers under the belt */
+.belt::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 12px;
+  background: radial-gradient(circle at 6px 6px, var(--belt-edge) 4px, transparent 4.6px) 0 0 / 44px 12px repeat-x; }
+/* tickets riding on the belt: they start cyan and leave green */
+.box { position: absolute; bottom: calc(100% + 2px); width: 30px; height: 22px; border-radius: 5px; background: var(--run);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--run) 60%, transparent); animation: ride 13.5s linear infinite; }
+.box::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; border-radius: 2px; background: rgba(0, 0, 0, .35); box-shadow: 0 5px 0 rgba(0, 0, 0, .25); }
+.box.b1 { left: 10%; } .box.b2 { left: 45%; animation-delay: -4.5s; } .box.b3 { left: 80%; animation-delay: -9s; }
+@keyframes ride { 0% { left: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); box-shadow: 0 0 16px color-mix(in srgb, var(--done) 60%, transparent); } 100% { left: 100%; } }
+.st { position: relative; z-index: 1; text-align: center; background: var(--card); border: 1px solid var(--line-2); border-radius: 12px; padding: 30px 8px 14px; }
+.st::after { content: ""; position: absolute; left: 50%; bottom: -36px; width: 14px; height: 34px; transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
+.st .num { position: absolute; top: 9px; left: 10px; font: 600 11px/1 var(--mono); color: var(--muted); letter-spacing: .08em; }
+.st .node { width: 50px; height: 50px; margin: 0 auto; border-radius: 12px; display: grid; place-items: center; background: var(--bg-2);
+  border: 1px solid var(--line-2); color: var(--fg-2); }
+.st .node svg { width: 24px; height: 24px; }
+.st.agent .node { color: var(--run); border-color: color-mix(in srgb, var(--run) 45%, var(--line-2)); background: var(--run-soft); }
+.st.judge .node { color: var(--done); border-color: color-mix(in srgb, var(--done) 45%, var(--line-2)); background: var(--done-soft); }
+.st.judge { border-color: color-mix(in srgb, var(--done) 50%, var(--line-2)); }
+.st h3 { font: 600 14.5px/1.25 var(--sans); margin: 12px 0 4px; }
+.st p { margin: 0; font: 400 12px/1.4 var(--mono); color: var(--muted); }
 .st div { min-width: 0; }
+/* narrow screens: the belt runs down the left side, the stations stand beside it */
+@media (max-width: 900px) {
+  .factory { grid-template-columns: 1fr; gap: 12px; padding: 0 0 0 70px; }
+  .belt { left: 4px; right: auto; top: -8px; bottom: -8px; width: 30px; height: auto;
+    background: repeating-linear-gradient(180deg, var(--belt-a) 0 16px, var(--belt-b) 16px 32px); animation-name: belt-down; }
+  @keyframes belt-down { to { background-position: 0 32px; } }
+  .belt::after { left: auto; right: -18px; top: 14px; bottom: 14px; width: 12px; height: auto;
+    background: radial-gradient(circle at 6px 6px, var(--belt-edge) 4px, transparent 4.6px) 0 0 / 12px 44px repeat-y; }
+  .box { bottom: auto; left: 2px; width: 22px; height: 30px; animation-name: ride-down; }
+  .box.b1 { left: 2px; top: 10%; } .box.b2 { left: 2px; top: 45%; } .box.b3 { left: 2px; top: 80%; }
+  .box::before { left: 6px; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; box-shadow: 5px 0 0 rgba(0, 0, 0, .25); }
+  @keyframes ride-down { 0% { top: -4%; background: var(--run); } 82% { background: var(--run); } 90%, 100% { background: var(--done); } 100% { top: 100%; } }
+  .st { display: grid; grid-template-columns: 50px 1fr; gap: 0 14px; align-items: center; text-align: left; padding: 14px 14px 14px 14px; }
+  .st::after { left: -34px; bottom: auto; top: 50%; width: 34px; height: 14px; transform: translateY(-50%);
+    background: linear-gradient(180deg, var(--belt-edge) 0 2px, transparent 2px calc(100% - 2px), var(--belt-edge) calc(100% - 2px)); }
+  .st .num { position: static; grid-column: 2; grid-row: 1; margin-bottom: 4px; }
+  .st .node { grid-row: 1 / span 2; margin: 0; }
+  .st h3 { margin: 0 0 2px; }
+}
 
 /* principles */
 .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 44px; }
@@ -160,7 +186,7 @@ h2 { font: 700 clamp(30px, 4vw, 46px)/1.1 var(--sans); letter-spacing: -.025em; 
 .tabs button { font: 500 14px/1 var(--mono); color: var(--fg-2); background: transparent; border: 0; border-radius: 8px; padding: 0 16px; min-height: 44px; cursor: pointer; transition: background .2s, color .2s; }
 .tabs button:hover { color: var(--fg); background: var(--card-2); }
 .tabs button[aria-selected="true"] { background: var(--run); color: var(--on-run); }
-.panel { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; margin-top: 18px; }
+.panel { margin-top: 18px; }
 .panel[hidden] { display: none; }
 .panel .shot { margin: 0; max-width: none; }
 .panel .shot img { aspect-ratio: auto; }
@@ -281,16 +307,16 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
     <div class="kicker">Ablauf eines Tickets</div>
     <h2 id="h-ablauf">Acht Stationen. Jede beginnt mit frischem Kontext.</h2>
     <p class="sub">Jede Station sieht nur die Dateien ihrer Vorgänger. Ein normales Python-Skript führt sie in fester Reihenfolge aus, zählt Runden und Budget und hält an einem Limit an.</p>
-    <div class="line" role="list">
-      <span class="belt-ticket" aria-hidden="true"></span>
-      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span><div><h3>Eingang</h3><p>Haiku · fester Auftrag</p></div></div>
-      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-map"/></svg></span><div><h3>Planer</h3><p>Fable · Tasks mit Kriterien</p></div></div>
-      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><div><h3>Plan-Prüfung</h3><p>Opus · frischer Prüfer</p></div></div>
-      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-code"/></svg></span><div><h3>Implementierer</h3><p>Sonnet · parallel je Task</p></div></div>
-      <div class="st" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><h3>Checks</h3><p>die Tests deines Projekts</p></div></div>
-      <div class="st agent" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-git"/></svg></span><div><h3>Reviewer</h3><p>Opus · liest den Diff</p></div></div>
-      <div class="st judge" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><div><h3>Richter</h3><p>Opus · verborgene Szenarien</p></div></div>
-      <div class="st" role="listitem"><span class="node"><svg aria-hidden="true"><use href="#i-pr"/></svg></span><div><h3>Auslieferung</h3><p>Pull Request oder Merge</p></div></div>
+    <div class="factory" role="list">
+      <div class="belt" aria-hidden="true"><span class="box b1"></span><span class="box b2"></span><span class="box b3"></span></div>
+      <div class="st agent" role="listitem"><span class="num">01</span><span class="node"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span><div><h3>Eingang</h3><p>Haiku · fester Auftrag</p></div></div>
+      <div class="st agent" role="listitem"><span class="num">02</span><span class="node"><svg aria-hidden="true"><use href="#i-map"/></svg></span><div><h3>Planer</h3><p>Fable · Tasks mit Kriterien</p></div></div>
+      <div class="st agent" role="listitem"><span class="num">03</span><span class="node"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><div><h3>Plan-Prüfung</h3><p>Opus · frischer Prüfer</p></div></div>
+      <div class="st agent" role="listitem"><span class="num">04</span><span class="node"><svg aria-hidden="true"><use href="#i-code"/></svg></span><div><h3>Implementierer</h3><p>Sonnet · parallel je Task</p></div></div>
+      <div class="st" role="listitem"><span class="num">05</span><span class="node"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><h3>Checks</h3><p>die Tests deines Projekts</p></div></div>
+      <div class="st agent" role="listitem"><span class="num">06</span><span class="node"><svg aria-hidden="true"><use href="#i-git"/></svg></span><div><h3>Reviewer</h3><p>Opus · liest den Diff</p></div></div>
+      <div class="st judge" role="listitem"><span class="num">07</span><span class="node"><svg aria-hidden="true"><use href="#i-scale"/></svg></span><div><h3>Richter</h3><p>Opus · verborgene Szenarien</p></div></div>
+      <div class="st" role="listitem"><span class="num">08</span><span class="node"><svg aria-hidden="true"><use href="#i-pr"/></svg></span><div><h3>Auslieferung</h3><p>Pull Request oder Merge</p></div></div>
     </div>
   </section>
 
@@ -317,42 +343,32 @@ footer a { color: var(--fg-2); text-decoration: none; } footer a:hover { color: 
     </div>
 
     <div class="tabs" role="tablist" aria-label="Ansichten des Boards">
-      <button role="tab" id="t-signal" aria-controls="p-signal" aria-selected="true">Stellwerk</button>
-      <button role="tab" id="t-ticket" aria-controls="p-ticket" aria-selected="false" tabindex="-1">Ticket</button>
-      <button role="tab" id="t-time" aria-controls="p-time" aria-selected="false" tabindex="-1">Fahrplan</button>
+      <button role="tab" id="t-kanban" aria-controls="p-kanban" aria-selected="true">Kanban</button>
       <button role="tab" id="t-line" aria-controls="p-line" aria-selected="false" tabindex="-1">Linie</button>
-      <button role="tab" id="t-light" aria-controls="p-light" aria-selected="false" tabindex="-1">Hell</button>
+      <button role="tab" id="t-time" aria-controls="p-time" aria-selected="false" tabindex="-1">Fahrplan</button>
+      <button role="tab" id="t-signal" aria-controls="p-signal" aria-selected="false" tabindex="-1">Stellwerk</button>
+      <button role="tab" id="t-ticket" aria-controls="p-ticket" aria-selected="false" tabindex="-1">Ticket</button>
     </div>
 
-    <div class="panel" role="tabpanel" id="p-signal" aria-labelledby="t-signal">
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Stellwerk</span></div>
-        <img src="assets/flow-signal-dark.webp" width="1920" height="1200" loading="lazy" alt="Stellwerk-Ansicht: die Stationen als Knoten eines Netzes, Linien zeigen, wie viele Tickets von Station zu Station gingen; ein gelber Ast führt zu dir."></figure>
-      <div><h3>Wo staut es sich?</h3><p>Das Netz der Stationen zeigt, wo Tickets liegen und wie sie fließen.</p>
-        <ul><li>Kreisgröße: Tickets an einer Station</li><li>Linienstärke: Durchsatz im Zeitraum</li><li>Gelber Ast: was gerade auf dich wartet</li></ul></div>
-    </div>
-    <div class="panel" role="tabpanel" id="p-ticket" aria-labelledby="t-ticket" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Ticket #7 · Ablauf</span></div>
-        <img src="assets/ticket-dark.webp" width="1920" height="1200" loading="lazy" alt="Ein geöffnetes Ticket: Fortschritt über neun Stationen, Arbeitszeit und Durchlauf, darunter der Ablauf mit Eingang, Planer, Plan-Prüfung, Implementierer, Checks und Review samt Modell und Dauer."></figure>
-      <div><h3>Jeder Schritt nachvollziehbar</h3><p>Ein Klick auf eine Karte öffnet den Ablauf des Tickets.</p>
-        <ul><li>Modell, Effort und Dauer je Station</li><li>Was ein Agent getan hat, klappt auf</li><li>Anhalten oder neu starten, direkt hier</li></ul></div>
-    </div>
-    <div class="panel" role="tabpanel" id="p-time" aria-labelledby="t-time" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Fahrplan</span></div>
-        <img src="assets/flow-timetable-light.webp" width="1920" height="1200" loading="lazy" alt="Fahrplan-Ansicht in Hell: je Ticket eine Zeile auf einer Zeitachse, farbige Abschnitte für Planung, Umsetzung, Prüfung und Warten auf dich."></figure>
-      <div><h3>Wohin ging die Zeit?</h3><p>Der Fahrplan legt jedes Ticket auf eine Zeitachse.</p>
-        <ul><li>Farbige Abschnitte je Phase</li><li>Wartezeit auf einen Platz und auf dich</li><li>Zeitraum 12 h, 36 h oder 7 Tage</li></ul></div>
+    <div class="panel" role="tabpanel" id="p-kanban" aria-labelledby="t-kanban">
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Kanban</span></div>
+        <img src="assets/flow-kanban-dark.webp" width="1920" height="1200" loading="lazy" alt="Kanban-Ansicht: Spalten Eingang, Planung, Umsetzung und Prüfung mit den laufenden Tickets, darunter die fertigen Tickets mit dem Urteil des Richters."></figure>
     </div>
     <div class="panel" role="tabpanel" id="p-line" aria-labelledby="t-line" hidden>
       <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Linie</span></div>
         <img src="assets/flow-line-dark.webp" width="1920" height="1200" loading="lazy" alt="Linien-Ansicht: Spalten von Eingang bis Fertig, Tickets warten auf Runner oder laufen, darunter die Liste der automatisch gemergten Tickets."></figure>
-      <div><h3>Das Band von der Seite</h3><p>Die Linie zeigt jede Station als Abschnitt der Halle.</p>
-        <ul><li>Durchsatz und typische Dauer je Station</li><li>Runner und geteilte Tickets</li><li>Fertige Tickets mit Urteil des Richters</li></ul></div>
     </div>
-    <div class="panel" role="tabpanel" id="p-light" aria-labelledby="t-light" hidden>
-      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Board · Hell</span></div>
-        <img src="assets/board-kanban-light.webp" width="1920" height="1200" loading="lazy" alt="Das Board in der hellen Darstellung mit denselben Kennzahlen, wartenden Tickets und Kanban-Spalten."></figure>
-      <div><h3>Hell oder dunkel</h3><p>Jedes Theme hat eine helle und eine dunkle Seite; Auto folgt deinem System.</p>
-        <ul><li>Kanban, Linie, Fahrplan und Stellwerk</li><li>Einstellungen im Browser, ohne YAML</li><li>Projekt anhalten mit einem Knopf</li></ul></div>
+    <div class="panel" role="tabpanel" id="p-time" aria-labelledby="t-time" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Fahrplan</span></div>
+        <img src="assets/flow-timetable-light.webp" width="1920" height="1200" loading="lazy" alt="Fahrplan-Ansicht in Hell: je Ticket eine Zeile auf einer Zeitachse, farbige Abschnitte für Planung, Umsetzung, Prüfung und Warten auf dich."></figure>
+    </div>
+    <div class="panel" role="tabpanel" id="p-signal" hidden aria-labelledby="t-signal">
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Fließband · Stellwerk</span></div>
+        <img src="assets/flow-signal-dark.webp" width="1920" height="1200" loading="lazy" alt="Stellwerk-Ansicht: die Stationen als Knoten eines Netzes, Linien zeigen, wie viele Tickets von Station zu Station gingen; ein gelber Ast führt zu dir."></figure>
+    </div>
+    <div class="panel" role="tabpanel" id="p-ticket" aria-labelledby="t-ticket" hidden>
+      <figure class="shot"><div class="bar" aria-hidden="true"><i></i><i></i><i></i><span class="url">Ticket #7 · Ablauf</span></div>
+        <img src="assets/ticket-dark.webp" width="1920" height="1200" loading="lazy" alt="Ein geöffnetes Ticket: Fortschritt über neun Stationen, Arbeitszeit und Durchlauf, darunter der Ablauf mit Eingang, Planer, Plan-Prüfung, Implementierer, Checks und Review samt Modell und Dauer."></figure>
     </div>
   </section>
 
