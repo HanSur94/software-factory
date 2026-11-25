@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 72" role="img" aria-label="Software Factory">
+<title>Software Factory</title>
+<rect x="3" y="9" width="54" height="54" fill="none" stroke="#9a6200" stroke-width="3"/>
+<text x="30" y="46" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="26" font-weight="700" fill="#9a6200">SF</text>
+<text x="78" y="46" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-size="29" font-weight="700" letter-spacing="4.500" fill="#111113" textLength="384" lengthAdjust="spacing">SOFTWARE_FACTORY</text>
+</svg>
